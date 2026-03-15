@@ -1,7 +1,15 @@
 :root {
+  --bg: #0e0a09;
+  --panel: rgba(34, 19, 16, 0.68);
+  --line: #5e2a2a;
+  --gold: #f2c27d;
+  --gold-soft: #c99d67;
+  --paper: #f5e2c4;
+  --paper-soft: #d9c2a2;
+
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #111827;
-  background: #f8fafc;
+  color: var(--paper);
+  background: var(--bg);
 }
 
 * {
@@ -10,6 +18,10 @@
 
 body {
   margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(131, 39, 39, 0.22), transparent 45%),
+    linear-gradient(180deg, #130b0a, #090605);
 }
 
 a {

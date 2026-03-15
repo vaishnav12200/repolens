@@ -69,99 +69,95 @@ type CompareResult = {
   recommendation: string
 }
 
+type TestResult = {
+  detectedCommands: string[]
+  testFiles: number
+  suggestedMissingTests: string[]
+  summary: string
+}
+
+type Screen = 'landing' | 'selector' | 'workspace'
+
+type Feature = {
+  id:
+    | 'run'
+    | 'explain'
+    | 'structure'
+    | 'chat'
+    | 'issues'
+    | 'stats'
+    | 'test'
+    | 'compare'
+    | 'docs'
+    | 'learn'
+  title: string
+  tag: string
+  description: string
+}
+
+const FEATURES: Feature[] = [
+  { id: 'run', title: 'Run It', tag: '01', description: 'Generate live sandbox commands and runtime preview info.' },
+  { id: 'explain', title: 'Explain It', tag: '02', description: 'Get plain-English summary, stack and entry point walkthrough.' },
+  { id: 'structure', title: 'Draw the Structure', tag: '03', description: 'See folder map, architecture notes, call/dependency graph slices.' },
+  { id: 'chat', title: 'Chat With The Repo', tag: '04', description: 'Ask targeted questions and get file-based references.' },
+  { id: 'issues', title: 'Find Issues', tag: '05', description: 'Surface security smells, hardcoded secrets and risky patterns.' },
+  { id: 'stats', title: 'Repo Stats Dashboard', tag: '06', description: 'Track commit velocity, hot files, coverage estimate and bus factor.' },
+  { id: 'test', title: 'Test It', tag: '07', description: 'Inspect detected tests and untested candidate areas instantly.' },
+  { id: 'compare', title: 'Compare Two Repos', tag: '08', description: 'Evaluate two repos side-by-side with quality/activity heuristics.' },
+  { id: 'docs', title: 'Generate Documentation', tag: '09', description: 'Auto-build README, API overview and onboarding guide.' },
+  { id: 'learn', title: 'Learning Mode', tag: '10', description: 'Get a junior-friendly guided tour and key-file learning path.' },
+]
+
 function App() {
+  const [screen, setScreen] = useState<Screen>('landing')
+  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
+
   const [repoUrl, setRepoUrl] = useState('https://github.com/expressjs/express')
+  const [repoUrlSecond, setRepoUrlSecond] = useState('https://github.com/fastify/fastify')
+  const [question, setQuestion] = useState('Where is authentication handled?')
+
+  const [analysis, setAnalysis] = useState<Analysis | null>(null)
+  const [compareResult, setCompareResult] = useState<CompareResult | null>(null)
+  const [chatAnswer, setChatAnswer] = useState('')
+  const [chatRefs, setChatRefs] = useState<Array<{ path: string; line?: number }>>([])
+  const [testResult, setTestResult] = useState<TestResult | null>(null)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [analysis, setAnalysis] = useState<Analysis | null>(null)
-
-  const [chatQuestion, setChatQuestion] = useState('Where is authentication handled?')
-  const [chatAnswer, setChatAnswer] = useState<string>('')
-  const [chatRefs, setChatRefs] = useState<Array<{ path: string; line?: number }>>([])
-
-  const [testSummary, setTestSummary] = useState('')
-
-  const [leftUrl, setLeftUrl] = useState('https://github.com/expressjs/express')
-  const [rightUrl, setRightUrl] = useState('https://github.com/fastify/fastify')
-  const [compareResult, setCompareResult] = useState<CompareResult | null>(null)
-  const [compareLoading, setCompareLoading] = useState(false)
 
   const docsBlob = useMemo(() => {
     if (!analysis) return '# Analyze a repository first'
     return `${analysis.docs.readme}\n\n${analysis.docs.apiOverview}\n\n${analysis.docs.onboarding}`
   }, [analysis])
 
-  async function analyzeRepository() {
-    setLoading(true)
+  function openFeatureWorkspace(feature: Feature) {
+    setSelectedFeature(feature)
+    setScreen('workspace')
     setError('')
-    setAnalysis(null)
     setChatAnswer('')
-    setTestSummary('')
-    try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repoUrl }),
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error ?? 'Analysis failed')
-      }
-      setAnalysis(data)
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unknown error')
-    } finally {
-      setLoading(false)
+    setChatRefs([])
+    setCompareResult(null)
+    setTestResult(null)
+  }
+
+  async function ensureAnalysis() {
+    if (analysis && analysis.repoUrl === repoUrl) {
+      return analysis
     }
-  }
 
-  async function askRepoQuestion() {
-    if (!analysis) return
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ analysisId: analysis.id, question: chatQuestion }),
-    })
-    const data = await response.json()
-    setChatAnswer(data.answer ?? '')
-    setChatRefs(data.references ?? [])
-  }
-
-  async function runTestInsight() {
-    const response = await fetch('/api/test-run', {
+    const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repoUrl }),
     })
-    const data = await response.json()
-    if (response.ok) {
-      setTestSummary(
-        `${data.summary} Commands: ${(data.detectedCommands ?? []).join(', ')}. Suggested missing tests: ${(data.suggestedMissingTests ?? []).slice(0, 5).join(', ')}`,
-      )
-      return
-    }
-    setTestSummary(data.error ?? 'Unable to inspect tests')
-  }
 
-  async function compareRepos() {
-    setCompareLoading(true)
-    setCompareResult(null)
-    try {
-      const response = await fetch('/api/compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leftUrl, rightUrl }),
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error ?? 'Compare failed')
-      }
-      setCompareResult(data)
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unknown error')
-    } finally {
-      setCompareLoading(false)
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error ?? 'Analysis failed')
     }
+
+    setAnalysis(data)
+    return data as Analysis
   }
 
   function downloadDocs() {
@@ -174,140 +170,321 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
-  return (
-    <main className="page">
-      <header className="hero">
-        <h1>🔥 RepoLens</h1>
-        <p>Understand any repository without cloning locally.</p>
-        <div className="toolbar">
-          <input
-            value={repoUrl}
-            onChange={(event) => setRepoUrl(event.target.value)}
-            placeholder="Paste GitHub repo URL"
-          />
-          <button onClick={analyzeRepository} disabled={loading}>
-            {loading ? 'Analyzing...' : 'Run + Explain + Map'}
+  async function runSelectedFeature() {
+    if (!selectedFeature) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      if (selectedFeature.id === 'compare') {
+        const response = await fetch('/api/compare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leftUrl: repoUrl, rightUrl: repoUrlSecond }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Compare failed')
+        }
+        setCompareResult(data)
+        return
+      }
+
+      if (selectedFeature.id === 'test') {
+        const response = await fetch('/api/test-run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoUrl }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Test inspection failed')
+        }
+        setTestResult(data)
+        return
+      }
+
+      const freshAnalysis = await ensureAnalysis()
+
+      if (selectedFeature.id === 'chat') {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysisId: freshAnalysis.id, question }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Chat request failed')
+        }
+        setChatAnswer(data.answer ?? '')
+        setChatRefs(data.references ?? [])
+      }
+
+      if (selectedFeature.id === 'docs') {
+        downloadDocs()
+      }
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function renderLanding() {
+    return (
+      <section className="landing">
+        <p className="kicker">Western Intelligence for Codebases</p>
+        <h1>RepoLens</h1>
+        <p className="subtitle">Understand any repo without cloning, setup friction, or context-switching.</p>
+
+        <div className="feature-showcase">
+          {FEATURES.map((feature) => (
+            <article key={feature.id} className="feature-line">
+              <span className="tag">{feature.tag}</span>
+              <div>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <button className="cta" onClick={() => setScreen('selector')}>
+          Get Started
+        </button>
+      </section>
+    )
+  }
+
+  function renderSelector() {
+    return (
+      <section>
+        <header className="section-header">
+          <h2>Choose One Feature</h2>
+          <p>Select the capability you want to run first.</p>
+        </header>
+
+        <div className="selector-grid">
+          {FEATURES.map((feature) => (
+            <article key={feature.id} className="feature-card">
+              <span>{feature.tag}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+              <button onClick={() => openFeatureWorkspace(feature)}>Use Feature</button>
+            </article>
+          ))}
+        </div>
+
+        <button className="ghost" onClick={() => setScreen('landing')}>
+          Back to Landing
+        </button>
+      </section>
+    )
+  }
+
+  function renderFeatureResult() {
+    if (!selectedFeature) return null
+
+    if (selectedFeature.id === 'run' && analysis) {
+      return (
+        <div className="result-block">
+          <p>Detected Stack: {analysis.runIt.detectedStack.join(', ') || 'Unknown'}</p>
+          <p>Install: {analysis.runIt.installCommand}</p>
+          <p>Start: {analysis.runIt.startCommand}</p>
+          <p>Sandbox: {analysis.runIt.previewUrl}</p>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'explain' && analysis) {
+      return (
+        <div className="result-block">
+          <p>{analysis.explainIt.summary}</p>
+          <ul>
+            {analysis.explainIt.entryPoints.slice(0, 6).map((entry) => (
+              <li key={entry.path}>{entry.path}</li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'structure' && analysis) {
+      return (
+        <div className="result-block">
+          <p>Architecture</p>
+          <ul>
+            {analysis.structure.architecture.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <p>Folder nodes: {analysis.structure.folderTree.length}</p>
+          <p>Call edges: {analysis.structure.callGraph.length}</p>
+          <p>Dependency nodes: {analysis.structure.dependencyGraph.length}</p>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'chat') {
+      return (
+        <div className="result-block">
+          {chatAnswer ? <p>{chatAnswer}</p> : <p>Run this feature to get an answer.</p>}
+          {chatRefs.length > 0 && (
+            <ul>
+              {chatRefs.map((ref) => (
+                <li key={ref.path}>{ref.path}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'issues' && analysis) {
+      return (
+        <div className="result-block">
+          <p>Security findings: {analysis.issues.security.length}</p>
+          <p>Hardcoded secret hits: {analysis.issues.hardcodedSecrets.length}</p>
+          <p>Code smells: {analysis.issues.smells.length}</p>
+          <p>Missing error-handling spots: {analysis.issues.missingErrorHandling.length}</p>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'stats' && analysis) {
+      return (
+        <div className="result-block">
+          <p>Commit velocity (90d): {analysis.stats.commitVelocity90d}</p>
+          <p>Coverage estimate: {analysis.stats.testCoverageEstimate}%</p>
+          <ul>
+            {analysis.stats.mostChangedFiles.slice(0, 6).map((item) => (
+              <li key={item.file}>
+                {item.file} — {item.commits} commits
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'test') {
+      return (
+        <div className="result-block">
+          {testResult ? (
+            <>
+              <p>{testResult.summary}</p>
+              <p>Detected test files: {testResult.testFiles}</p>
+              <p>Commands: {testResult.detectedCommands.join(', ')}</p>
+            </>
+          ) : (
+            <p>Run this feature to inspect test coverage and test gaps.</p>
+          )}
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'compare') {
+      return (
+        <div className="result-block">
+          {compareResult ? (
+            <>
+              <p>{compareResult.recommendation}</p>
+              <p>
+                Left score hints — coverage {compareResult.left.stats.testCoverageEstimate}%, velocity {compareResult.left.stats.commitVelocity90d}
+              </p>
+              <p>
+                Right score hints — coverage {compareResult.right.stats.testCoverageEstimate}%, velocity {compareResult.right.stats.commitVelocity90d}
+              </p>
+            </>
+          ) : (
+            <p>Run compare to see side-by-side recommendation.</p>
+          )}
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'docs' && analysis) {
+      return (
+        <div className="result-block">
+          <p>Documentation generated for this repository.</p>
+          <p>Markdown export is automatically downloaded when you run this feature.</p>
+          <p>Preview title: {analysis.docs.readme.split('\n')[0]}</p>
+        </div>
+      )
+    }
+
+    if (selectedFeature.id === 'learn' && analysis) {
+      return (
+        <div className="result-block">
+          <ol>
+            {analysis.learning.tutorialSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <p>Important files: {analysis.learning.importantFiles.slice(0, 5).map((f) => f.path).join(', ')}</p>
+        </div>
+      )
+    }
+
+    return <div className="result-block">Run the selected feature to view results.</div>
+  }
+
+  function renderWorkspace() {
+    if (!selectedFeature) return null
+
+    return (
+      <section>
+        <header className="section-header">
+          <p className="kicker">Feature Workspace</p>
+          <h2>{selectedFeature.title}</h2>
+          <p>{selectedFeature.description}</p>
+        </header>
+
+        <div className="workspace-card">
+          <label>Repository URL</label>
+          <input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
+
+          {selectedFeature.id === 'compare' && (
+            <>
+              <label>Second Repository URL</label>
+              <input value={repoUrlSecond} onChange={(event) => setRepoUrlSecond(event.target.value)} />
+            </>
+          )}
+
+          {selectedFeature.id === 'chat' && (
+            <>
+              <label>Question</label>
+              <input value={question} onChange={(event) => setQuestion(event.target.value)} />
+            </>
+          )}
+
+          <button className="cta" onClick={runSelectedFeature} disabled={loading}>
+            {loading ? 'Running...' : `Run ${selectedFeature.title}`}
+          </button>
+          {error && <p className="error">{error}</p>}
+        </div>
+
+        {renderFeatureResult()}
+
+        <div className="workspace-actions">
+          <button className="ghost" onClick={() => setScreen('selector')}>
+            Back to Features
+          </button>
+          <button className="ghost" onClick={() => setScreen('landing')}>
+            Back to Landing
           </button>
         </div>
-        {error && <p className="error">{error}</p>}
-      </header>
+      </section>
+    )
+  }
 
-      {analysis && (
-        <section className="grid">
-          <article className="card">
-            <h2>1) Run It</h2>
-            <p>Detected: {analysis.runIt.detectedStack.join(', ') || 'Unknown stack'}</p>
-            <p>Install: {analysis.runIt.installCommand}</p>
-            <p>Start: {analysis.runIt.startCommand}</p>
-            <p>Sandbox URL: {analysis.runIt.previewUrl}</p>
-          </article>
-
-          <article className="card">
-            <h2>2) Explain It</h2>
-            <p>{analysis.explainIt.summary}</p>
-            <ul>
-              {analysis.explainIt.entryPoints.slice(0, 5).map((entry) => (
-                <li key={entry.path}>{entry.path}</li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="card">
-            <h2>3) Draw the Structure</h2>
-            <p>Architecture</p>
-            <ul>
-              {analysis.structure.architecture.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <p>Folder sample ({analysis.structure.folderTree.length} items)</p>
-          </article>
-
-          <article className="card">
-            <h2>4) Chat With Repo</h2>
-            <div className="stacked">
-              <input
-                value={chatQuestion}
-                onChange={(event) => setChatQuestion(event.target.value)}
-                placeholder="Ask about auth, payments, forms..."
-              />
-              <button onClick={askRepoQuestion}>Ask</button>
-              {chatAnswer && <p>{chatAnswer}</p>}
-              {chatRefs.length > 0 && (
-                <ul>
-                  {chatRefs.map((ref) => (
-                    <li key={ref.path}>{ref.path}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </article>
-
-          <article className="card">
-            <h2>5) Find Issues</h2>
-            <p>Security findings: {analysis.issues.security.length}</p>
-            <p>Hardcoded secret hits: {analysis.issues.hardcodedSecrets.length}</p>
-            <p>Code smells: {analysis.issues.smells.length}</p>
-          </article>
-
-          <article className="card">
-            <h2>6) Repo Stats Dashboard</h2>
-            <p>Commit velocity (90d): {analysis.stats.commitVelocity90d}</p>
-            <p>Coverage estimate: {analysis.stats.testCoverageEstimate}%</p>
-            <ul>
-              {analysis.stats.mostChangedFiles.slice(0, 5).map((file) => (
-                <li key={file.file}>
-                  {file.file} — {file.commits} commits
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="card">
-            <h2>7) Test It</h2>
-            <p>Detected test files: {analysis.testing.testFiles}</p>
-            <button onClick={runTestInsight}>Run Test Insight</button>
-            {testSummary && <p>{testSummary}</p>}
-          </article>
-
-          <article className="card">
-            <h2>8) Compare Two Repos</h2>
-            <div className="stacked">
-              <input value={leftUrl} onChange={(event) => setLeftUrl(event.target.value)} />
-              <input value={rightUrl} onChange={(event) => setRightUrl(event.target.value)} />
-              <button onClick={compareRepos} disabled={compareLoading}>
-                {compareLoading ? 'Comparing...' : 'Compare'}
-              </button>
-              {compareResult && <p>{compareResult.recommendation}</p>}
-            </div>
-          </article>
-
-          <article className="card">
-            <h2>9) Generate Documentation</h2>
-            <button onClick={downloadDocs}>Export Markdown</button>
-            <p>README, API overview, and onboarding guide are generated.</p>
-          </article>
-
-          <article className="card">
-            <h2>10) Learning Mode</h2>
-            <ol>
-              {analysis.learning.tutorialSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-            <p>
-              Important files: {analysis.learning.importantFiles.slice(0, 5).map((file) => file.path).join(', ')}
-            </p>
-          </article>
-        </section>
-      )}
-
-      {!analysis && !loading && (
-        <section className="empty">
-          <h2>Paste a repository URL to begin</h2>
-          <p>RepoLens will run analysis and unlock all 10 capabilities in one dashboard.</p>
-        </section>
-      )}
+  return (
+    <main className="app-shell">
+      <div className="grain" />
+      {screen === 'landing' && renderLanding()}
+      {screen === 'selector' && renderSelector()}
+      {screen === 'workspace' && renderWorkspace()}
     </main>
   )
 }
