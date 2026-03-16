@@ -111,6 +111,7 @@ const FEATURES: Feature[] = [
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
+  const [landingSelectedFeature, setLandingSelectedFeature] = useState<Feature['id'] | null>(null)
 
   const [repoUrl, setRepoUrl] = useState('https://github.com/expressjs/express')
   const [repoUrlSecond, setRepoUrlSecond] = useState('https://github.com/fastify/fastify')
@@ -232,25 +233,71 @@ function App() {
   }
 
   function renderLanding() {
-    return (
-      <section className="landing">
-        <p className="kicker">Western Intelligence for Codebases</p>
-        <h1>RepoLens</h1>
-        <p className="subtitle">Understand any repo without cloning, setup friction, or context-switching.</p>
+    const topRowOrder: Array<Feature['id']> = ['run', 'explain', 'structure', 'chat', 'issues']
+    const bottomRowOrder: Array<Feature['id']> = ['stats', 'test', 'docs', 'compare']
 
-        <div className="feature-showcase">
-          {FEATURES.map((feature) => (
-            <article key={feature.id} className="feature-line">
-              <span className="tag">{feature.tag}</span>
-              <div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </div>
-            </article>
-          ))}
+    const topRowFeatures = topRowOrder
+      .map((featureId) => FEATURES.find((feature) => feature.id === featureId))
+      .filter((feature): feature is Feature => Boolean(feature))
+
+    const bottomRowFeatures = bottomRowOrder
+      .map((featureId) => FEATURES.find((feature) => feature.id === featureId))
+      .filter((feature): feature is Feature => Boolean(feature))
+
+    function startFromLanding() {
+      if (landingSelectedFeature) {
+        const feature = FEATURES.find((item) => item.id === landingSelectedFeature)
+        if (feature) {
+          openFeatureWorkspace(feature)
+          return
+        }
+      }
+      setScreen('selector')
+    }
+
+    return (
+      <section className="landing cinematic">
+        <div className="landing-overlay" />
+        <header className="hero-copy">
+          <h1>RepoLens</h1>
+          <h2>Choose a Feature</h2>
+          <p className="subtitle">What do you want to do with the repository?</p>
+        </header>
+
+        <div className="feature-rows" role="list">
+          <div className="feature-row" role="listitem">
+            {topRowFeatures.map((feature) => (
+              <button
+                key={feature.id}
+                className={`plank-button ${landingSelectedFeature === feature.id ? 'active' : ''}`}
+                onClick={() => setLandingSelectedFeature(feature.id)}
+              >
+                {feature.id === 'run' && 'Run Repo'}
+                {feature.id === 'explain' && 'Explain Repo'}
+                {feature.id === 'structure' && 'Repo Structure'}
+                {feature.id === 'chat' && 'Chat with Repo'}
+                {feature.id === 'issues' && 'Find Issues'}
+              </button>
+            ))}
+          </div>
+
+          <div className="feature-row" role="listitem">
+            {bottomRowFeatures.map((feature) => (
+              <button
+                key={feature.id}
+                className={`plank-button ${landingSelectedFeature === feature.id ? 'active' : ''}`}
+                onClick={() => setLandingSelectedFeature(feature.id)}
+              >
+                {feature.id === 'stats' && 'Repo Stats'}
+                {feature.id === 'test' && 'Run Tests'}
+                {feature.id === 'docs' && 'Generate Docs'}
+                {feature.id === 'compare' && 'Compare Repos'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <button className="cta" onClick={() => setScreen('selector')}>
+        <button className="cta hero-cta" onClick={startFromLanding}>
           Get Started
         </button>
       </section>
