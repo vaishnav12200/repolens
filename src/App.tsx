@@ -139,6 +139,10 @@ function App() {
     setChatRefs([])
     setCompareResult(null)
     setTestResult(null)
+    // Always clear old analysis to force re-fetch when starting fresh or new URL is given
+    if (analysis && analysis.repoUrl !== repoUrl) {
+      setAnalysis(null);
+    }
   }
 
   async function ensureAnalysis() {
@@ -206,7 +210,39 @@ function App() {
         return
       }
 
+      
+      if (selectedFeature.id === 'run') {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoUrl }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Run execution failed')
+        }
+        setAnalysis(data)
+        return
+      }
+
+      
+      if (selectedFeature.id === 'run') {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repoUrl }),
+        })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Run execution failed')
+        }
+        setAnalysis(data)
+        return
+      }
+
       const freshAnalysis = await ensureAnalysis()
+
+
 
       if (selectedFeature.id === 'chat') {
         const response = await fetch('/api/chat', {
@@ -639,7 +675,10 @@ function App() {
 
         <div className="workspace-card">
           <label>Repository URL</label>
-          <input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
+          <input value={repoUrl} onChange={(event) => {
+            setRepoUrl(event.target.value)
+            setAnalysis(null)
+          }} />
 
           {selectedFeature.id === 'compare' && (
             <>
@@ -656,7 +695,7 @@ function App() {
           )}
 
           <button className="cta" onClick={runSelectedFeature} disabled={loading}>
-            {loading ? 'Running...' : `Run ${selectedFeature.title}`}
+            {loading ? 'Running...' : (analysis && selectedFeature.id !== 'compare' && selectedFeature.id !== 'test' && selectedFeature.id !== 'chat' && analysis.repoUrl === repoUrl) ? `View ${selectedFeature.title}` : `Run ${selectedFeature.title}`}
           </button>
           {error && <p className="error">{error}</p>}
         </div>

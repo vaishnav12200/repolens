@@ -306,7 +306,7 @@ function generateDocs(repoUrl: string, stack: StackItem[], entryPoints: FileRef[
   return { readme, apiOverview, onboarding }
 }
 
-function buildGlossary(sampleContents: Array<{ file: string; content: string }>) {
+export function buildGlossary(sampleContents: Array<{ file: string; content: string }>) {
   const terms = new Map<string, string>()
   const candidates = ['auth', 'webhook', 'worker', 'queue', 'controller', 'service', 'repository', 'dto']
   const dictionary: Record<string, string> = {
@@ -328,100 +328,55 @@ function buildGlossary(sampleContents: Array<{ file: string; content: string }>)
   return [...terms.entries()].map(([term, meaning]) => ({ term, meaning }))
 }
 
-export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis> {
-  const local = await cloneRepo(repoUrl)
-  try {
-    const id = crypto.randomUUID()
-    const stack = detectStack(local.files)
-    const entryPoints = detectEntryPoints(local.files)
-    const businessLogic = summarizeBusinessLogic(local.sampleContents)
-    const issues = findIssues(local.sampleContents, local.files)
-    const mostChangedFiles = await getMostChangedFiles(local.dir)
-    const commitVelocity90d = await getCommitVelocity(local.dir)
-    const busFactorByFolder = await getBusFactor(local.dir)
-    const codeAgeHeatmap = await getCodeAgeHeatmap(local.dir, local.files)
-    const coverage = estimateCoverage(local.files)
-    const docs = generateDocs(repoUrl, stack, entryPoints, businessLogic)
-    const glossary = buildGlossary(local.sampleContents)
+export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _repoDir: string }> {
+  const { dir, files, sampleContents } = await cloneRepo(repoUrl)
 
-    const analysis: RepoAnalysis = {
-      id,
-      repoUrl,
-      analyzedAt: new Date().toISOString(),
-      runIt: {
-        detectedStack: stack.map((x) => x.name),
-        installCommand: local.files.includes('package.json') ? 'npm install' : 'auto-detected per stack',
-        startCommand: local.files.includes('package.json') ? 'npm run dev' : 'stack-specific start command',
-        previewUrl: `https://sandbox.repolens.local/session/${id}`,
-        notes: ['Ephemeral sandbox boot configured.', 'No local Docker or setup required for the end user.'],
-      },
-      explainIt: {
-        summary: `This repository appears to be a ${stack.map((s) => s.name).join(', ') || 'software'} project with ${local.files.length} tracked files in scope.`,
-        stackBreakdown: stack,
-        entryPoints,
-        businessLogic,
-      },
-      structure: {
-        folderTree: buildFolderTree(local.files),
-        architecture: buildArchitecture(local.files),
-        callGraph: buildCallGraph(local.sampleContents),
-        dependencyGraph: buildDependencyGraph(local.sampleContents),
-      },
-      chatIndex: {
-        hotspots: entryPoints,
-        glossary,
-      },
-      issues,
-      stats: {
-        mostChangedFiles,
-        busFactorByFolder,
-        codeAgeHeatmap,
-        commitVelocity90d,
-        testCoverageEstimate: coverage.coverage,
-      },
-      testing: {
-        detectedTestCommands: local.files.includes('package.json') ? ['npm test', 'npm run test'] : ['pytest', 'go test ./...'],
-        testFiles: coverage.testFiles,
-        untestedCandidateFiles: coverage.untested,
-      },
-      docs,
-      learning: {
-        tutorialSteps: [
-          'Start with the top-level README and package metadata.',
-          'Open the first entry point and follow routing/bootstrap logic.',
-          'Trace one user action end-to-end using controllers/services.',
-          'Inspect data models and persistence adapters.',
-          'Run tests and map uncovered paths from failing/absent cases.',
-        ],
-        importantFiles: entryPoints.length > 0 ? entryPoints : local.files.slice(0, 10).map((path) => ({ path })),
-        glossary,
-      },
-    }
+  const stack = detectStack(files)
+  const entryPoints = detectEntryPoints(files)
+  const logic = summarizeBusinessLogic(sampleContents)
+  const issues = findIssues(sampleContents, files)
+  const [mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap] = await Promise.all([
+    getMostChangedFiles(dir),
+    getCommitVelocity(dir),
+    getBusFactor(dir),
+    getCodeAgeHeatmap(dir, files),
+  ])
 
-    return analysis
-  } finally {
-    await rm(local.dir, { recursive: true, force: true })
-  }
-}
-
-export function answerQuestion(analysis: RepoAnalysis, question: string) {
-  const query = question.toLowerCase()
-  const hits = analysis.structure.folderTree
-    .filter((file) => file.toLowerCase().includes(query.split(' ')[0]))
-    .slice(0, 6)
-
-  let answer = 'I could not find an exact match, but start with the entry points and service folders.'
-  if (query.includes('auth')) {
-    answer = 'Authentication logic is usually found in middleware, guards, or auth service files. Check files containing auth, jwt, and middleware.'
-  } else if (query.includes('payment')) {
-    answer = 'Payment flow generally starts in API handlers and then calls payment provider SDK wrappers. Look for files referencing stripe, billing, or checkout.'
-  } else if (query.includes('form')) {
-    answer = 'Form submissions typically pass from UI handlers to API endpoints, then validation/service layers.'
+  const testing = estimateCoverage(files)
+  const docs = generateDocs(repoUrl, stack, entryPoints, logic)
+  const glossary = buildGlossary(sampleContents)
+  const learning = {
+    tutorialSteps: [
+      'Start with the top-level README and package metadata.',
+      'Open the first entry point and follow routing/bootstrap logic.',
+      'Trace one user action end-to-end using controllers/services.',
+      'Inspect data models and persistence adapters.',
+      'Run tests and map uncovered paths from failing/absent cases.',
+    ],
+    importantFiles: entryPoints.length > 0 ? entryPoints : files.slice(0, 10).map((path) => ({ path })),
+    glossary,
   }
 
+  // NOTE: intentional leak of 'dir' out to be picked up by startRepo later.
   return {
-    answer,
-    references: hits.map((path) => ({ path })),
+    _repoDir: dir,
+    id: crypto.randomUUID(),
+    repoUrl,
+    analyzedAt: new Date().toISOString(),
+    runIt: {
+      detectedStack: stack.map((s) => s.name),
+      installCommand: stack.some((s) => s.name === 'Python') ? 'pip install -r requirements.txt' : 'npm install',
+      startCommand: stack.some((s) => s.name === 'Python') ? 'python app.py' : stack.some((s) => s.name === 'Vite') ? 'npm run dev' : 'npm start',
+      previewUrl: 'Will trigger when actual Run hit...',
+      notes: [],
+    },
+    explainIt: { summary: `Analyzed ${files.length} files. ${logic[0] ?? ''}`, stackBreakdown: stack, entryPoints, businessLogic: logic },
+    structure: { folderTree: buildFolderTree(files), architecture: buildArchitecture(files), callGraph: buildCallGraph(sampleContents), dependencyGraph: buildDependencyGraph(sampleContents) },
+    issues,
+    stats: { mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap, testCoverageEstimate: testing.coverage },
+    testing: { detectedTestCommands: ['npm test'], testFiles: testing.testFiles, untestedCandidateFiles: testing.untested },
+    docs,
+    learning,
   }
 }
 
@@ -452,5 +407,26 @@ export function compareAnalyses(left: RepoAnalysis, right: RepoAnalysis): Compar
       issues: right.issues,
     },
     recommendation,
+  }
+}
+
+export function answerQuestion(analysis: unknown, question: string) {
+  const query = question.toLowerCase()
+  const hits = analysis.structure.folderTree
+    .filter((file: string) => file.toLowerCase().includes(query.split(' ')[0]))
+    .slice(0, 6)
+
+  let answer = 'I could not find an exact match, but start with the entry points and service folders.'
+  if (query.includes('auth')) {
+    answer = 'Authentication logic is usually found in middleware, guards, or auth service files. Check files containing auth, jwt, and middleware.'
+  } else if (query.includes('payment')) {
+    answer = 'Payment flow generally starts in API handlers and then calls payment provider SDK wrappers. Look for files referencing stripe, billing, or checkout.'
+  } else if (query.includes('form')) {
+    answer = 'Form submissions typically pass from UI handlers to API endpoints, then validation/service layers.'
+  }
+
+  return {
+    answer,
+    references: hits.map((path: string) => ({ path })),
   }
 }
