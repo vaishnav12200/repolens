@@ -110,8 +110,8 @@ const FEATURES: Feature[] = [
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
-  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null)
-  const [landingSelectedFeature, setLandingSelectedFeature] = useState<Feature['id'] | null>(null)
+  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(FEATURES[0])
+  const [landingSelectedFeature, setLandingSelectedFeature] = useState<Feature['id'] | null>(FEATURES[0].id)
 
   const [repoUrl, setRepoUrl] = useState('https://github.com/expressjs/express')
   const [repoUrlSecond, setRepoUrlSecond] = useState('https://github.com/fastify/fastify')
@@ -259,9 +259,17 @@ function App() {
       <section className="landing cinematic">
         <div className="landing-overlay" />
         <header className="hero-copy">
+          <p className="kicker">AI-native repo intelligence</p>
           <h1>RepoLens</h1>
-          <h2>Choose a Feature</h2>
-          <p className="subtitle">What do you want to do with the repository?</p>
+          <h2>Clarity for every repository</h2>
+          <p className="subtitle">
+            Deep analysis, runnable playbooks and documentation in one workspace. Pick a capability and launch instantly.
+          </p>
+          <div className="hero-badges">
+            <span>Instant architecture maps</span>
+            <span>Security-aware insights</span>
+            <span>Docs and onboarding on tap</span>
+          </div>
         </header>
 
         <div className="feature-rows" role="list">
@@ -298,7 +306,7 @@ function App() {
         </div>
 
         <button className="cta hero-cta" onClick={startFromLanding}>
-          Get Started
+          Open Workspace
         </button>
       </section>
     )
