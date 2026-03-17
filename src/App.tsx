@@ -257,7 +257,6 @@ function App() {
 
     return (
       <section className="landing cinematic">
-        <div className="landing-overlay" />
         <header className="hero-copy">
           <p className="kicker">AI-native repo intelligence</p>
           <h1>RepoLens</h1>
@@ -536,7 +535,6 @@ function App() {
 
   return (
     <main className="app-shell">
-      <div className="grain" />
       {screen === 'landing' && renderLanding()}
       {screen === 'selector' && renderSelector()}
       {screen === 'workspace' && renderWorkspace()}
