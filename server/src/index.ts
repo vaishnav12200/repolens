@@ -2,7 +2,6 @@ import cors from 'cors'
 import express from 'express'
 import { analyzeRepo, answerQuestion, compareAnalyses } from './repoAnalyzer.js'
 import { startRepo } from './runRepo.js'
-import { startRepo } from './runRepo.js'
 import type { ChatRequest, RepoAnalysis } from './types.js'
 
 const app = express()
@@ -13,32 +12,6 @@ const analyses = new Map<string, RepoAnalysis>()
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'repolens-api' })
-})
-
-app.post('/api/run', async (req, res) => {
-  const repoUrl = String(req.body?.repoUrl ?? '').trim()
-  if (!repoUrl) return res.status(400).json({ error: 'repoUrl is required' })
-
-  try {
-    let analysis = analyses.get(repoUrl)
-    if (!analysis) {
-       const fresh = await analyzeRepo(repoUrl)
-       analyses.set(repoUrl, fresh)
-       analysis = fresh
-    }
-
-    const { url } = await startRepo((analysis as { _repoDir: string })._repoDir, analysis.runIt.detectedStack.map(n => ({name: n})))
-    
-    // Update the preview URL in memory 
-    analysis.runIt.previewUrl = url;
-
-    return res.json(analysis)
-  } catch (error) {
-    return res.status(500).json({
-      error: 'Failed to build/run repository sandbox.',
-      detail: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
 })
 
 app.post('/api/run', async (req, res) => {
