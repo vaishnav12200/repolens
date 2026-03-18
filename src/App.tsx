@@ -392,16 +392,38 @@ function App() {
       return (
         <div className="result-block">
           <div className="list-group">
-            <h4>Repository Summary</h4>
-            <p style={{ lineHeight: '1.6', color: 'var(--text)' }}>{analysis.explainIt.summary}</p>
-          </div>
-          
-          <div className="list-group">
-            <h4>Key Entry Points</h4>
-            <div className="tag-list">
-              {analysis.explainIt.entryPoints.slice(0, 6).map((entry) => (
-                <span key={entry.path} className="tag-pill">{entry.path}</span>
-              ))}
+            <h4>Repository Explainer (README Mode)</h4>
+            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <h2 style={{marginTop: 0, marginBottom: '0.5rem'}}>{analysis.repoUrl.split('/').slice(-2).join('/')}</h2>
+              <p style={{ lineHeight: '1.6', color: 'var(--text)', fontSize: '1.1rem' }}>{analysis.explainIt.summary}</p>
+              
+              <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Tech Stack</h3>
+              <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>
+                {analysis.explainIt.stackBreakdown.map(stack => (
+                  <li key={stack.name} style={{ marginBottom: '0.25rem' }}>
+                    <strong>{stack.name}</strong> <span style={{color: 'var(--text-muted)', fontSize: '0.9em'}}>({stack.confidence} confidence)</span><br/>
+                    <small style={{color: 'var(--text-muted)'}}>{stack.evidence}</small>
+                  </li>
+                ))}
+              </ul>
+
+              {analysis.explainIt.businessLogic.length > 0 && (
+                <>
+                  <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Core Logic & Features</h3>
+                  <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>
+                    {analysis.explainIt.businessLogic.map((logic, i) => (
+                      <li key={i} style={{ marginBottom: '0.5rem', lineHeight: '1.5' }}>{logic}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Entry Points</h3>
+              <div className="tag-list" style={{ marginTop: '0.5rem' }}>
+                {analysis.explainIt.entryPoints.map((entry) => (
+                  <span key={entry.path} className="tag-pill" style={{fontFamily: 'monospace'}}>{entry.path}</span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -409,11 +431,52 @@ function App() {
     }
 
     if (selectedFeature.id === 'structure' && analysis) {
+      // Build a nested tree structure from flat paths
+      const tree: any = {};
+      analysis.structure.folderTree.forEach(path => {
+        const parts = path.split('/');
+        let current = tree;
+        parts.forEach((part, i) => {
+          if (!current[part]) {
+            current[part] = i === parts.length - 1 ? null : {};
+          }
+          current = current[part];
+        });
+      });
+
+      const renderTree = (node: any, prefix: string = '') => {
+        if (!node) return null;
+        const keys = Object.keys(node).sort((a, b) => {
+          const aIsDir = node[a] !== null;
+          const bIsDir = node[b] !== null;
+          if (aIsDir && !bIsDir) return -1;
+          if (!aIsDir && bIsDir) return 1;
+          return a.localeCompare(b);
+        });
+
+        return keys.map((key, index) => {
+          const isCurrentLast = index === keys.length - 1;
+          const isDir = node[key] !== null;
+          const marker = isCurrentLast ? '└── ' : '├── ';
+          const childPrefix = prefix + (isCurrentLast ? '    ' : '│   ');
+          
+          return (
+            <div key={prefix + key} style={{ whiteSpace: 'pre', fontFamily: 'monospace', color: 'var(--text)', lineHeight: '1.4' }}>
+              <span style={{color: 'var(--text-muted)'}}>{prefix}{marker}</span>
+              <span style={{color: isDir ? 'var(--accent)' : 'inherit', fontWeight: isDir ? 'bold' : 'normal'}}>
+                {isDir ? '📁 ' : '📄 '}{key}
+              </span>
+              {isDir && renderTree(node[key], childPrefix)}
+            </div>
+          );
+        });
+      };
+
       return (
         <div className="result-block">
           <div className="dashboard-grid">
             <div className="stat-card">
-              <h4>Total Folders</h4>
+              <h4>Total Files</h4>
               <p className="stat-value">{analysis.structure.folderTree.length}</p>
               <p className="stat-sub">Mapped in core tree</p>
             </div>
@@ -429,7 +492,15 @@ function App() {
             </div>
           </div>
 
-          <div className="list-group">
+          <div className="list-group" style={{ marginTop: '1.5rem' }}>
+            <h4>Project Structure Tree</h4>
+            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1rem', borderRadius: '8px', overflowX: 'auto', border: '1px solid var(--border)', marginTop: '0.75rem' }}>
+              <div style={{ fontFamily: 'monospace', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent)' }}>📦 {analysis.repoUrl.split('/').pop()}</div>
+              {renderTree(tree)}
+            </div>
+          </div>
+
+          <div className="list-group" style={{ marginTop: '1.5rem' }}>
             <h4>Architecture Overview</h4>
             <ul style={{ paddingLeft: '1.2rem', marginTop: '0.75rem' }}>
               {analysis.structure.architecture.map((line, idx) => (

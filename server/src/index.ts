@@ -26,7 +26,7 @@ app.post('/api/run', async (req, res) => {
        analysis = fresh
     }
 
-    const { url } = await startRepo((analysis as { _repoDir: string })._repoDir, analysis.runIt.detectedStack.map(n => ({name: n})))
+    const { url } = await startRepo((analysis as any)._repoDir, analysis.runIt.detectedStack.map(n => ({name: n})))
     
     // Update the preview URL in memory 
     analysis.runIt.previewUrl = url;

@@ -375,6 +375,7 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
     issues,
     stats: { mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap, testCoverageEstimate: testing.coverage },
     testing: { detectedTestCommands: ['npm test'], testFiles: testing.testFiles, untestedCandidateFiles: testing.untested },
+    chatIndex: { hotspots: [], glossary: [] },
     docs,
     learning,
   }
