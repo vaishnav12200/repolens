@@ -393,37 +393,73 @@ function App() {
         <div className="result-block">
           <div className="list-group">
             <h4>Repository Explainer (README Mode)</h4>
-            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-              <h2 style={{marginTop: 0, marginBottom: '0.5rem'}}>{analysis.repoUrl.split('/').slice(-2).join('/')}</h2>
-              <p style={{ lineHeight: '1.6', color: 'var(--text)', fontSize: '1.1rem' }}>{analysis.explainIt.summary}</p>
+            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
               
-              <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Tech Stack</h3>
-              <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>
-                {analysis.explainIt.stackBreakdown.map(stack => (
-                  <li key={stack.name} style={{ marginBottom: '0.25rem' }}>
-                    <strong>{stack.name}</strong> <span style={{color: 'var(--text-muted)', fontSize: '0.9em'}}>({stack.confidence} confidence)</span><br/>
-                    <small style={{color: 'var(--text-muted)'}}>{stack.evidence}</small>
-                  </li>
-                ))}
-              </ul>
+              {/* Introduction / What it does */}
+              <h2 style={{marginTop: 0, marginBottom: '0.5rem', borderBottom: '2px solid var(--accent)', paddingBottom: '0.5rem'}}>📖 Introduction to {analysis.repoUrl.split('/').pop()}</h2>
+              <p style={{ lineHeight: '1.8', color: 'var(--text)', fontSize: '1.1rem', marginBottom: '1.5rem' }}>
+                {analysis.explainIt.summary}
+              </p>
 
+              {/* Core Business Logic / What it handles */}
               {analysis.explainIt.businessLogic.length > 0 && (
-                <>
-                  <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Core Logic & Features</h3>
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>⚙️ What this project does</h3>
                   <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>
                     {analysis.explainIt.businessLogic.map((logic, i) => (
-                      <li key={i} style={{ marginBottom: '0.5rem', lineHeight: '1.5' }}>{logic}</li>
+                      <li key={i} style={{ marginBottom: '0.75rem', lineHeight: '1.6', fontSize: '1.05rem', color: 'var(--text)' }}>
+                        {logic}
+                      </li>
                     ))}
                   </ul>
-                </>
+                </div>
               )}
 
-              <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginTop: '1.5rem' }}>Entry Points</h3>
-              <div className="tag-list" style={{ marginTop: '0.5rem' }}>
-                {analysis.explainIt.entryPoints.map((entry) => (
-                  <span key={entry.path} className="tag-pill" style={{fontFamily: 'monospace'}}>{entry.path}</span>
-                ))}
+              {/* Architecture & Flow */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🔄 Architecture & Flow</h3>
+                <div style={{ backgroundColor: 'var(--bg-dark, #1e1e1e)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                  <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
+                    {analysis.structure.architecture.map((line, idx) => (
+                      <li key={idx} style={{ marginBottom: '0.5rem', color: 'var(--text)', lineHeight: '1.5' }}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
+
+              {/* Technology Stack */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🛠️ Technology Stack</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                  {analysis.explainIt.stackBreakdown.map(stack => (
+                    <div key={stack.name} style={{ backgroundColor: 'var(--bg-base)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.25rem' }}>{stack.name}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{stack.evidence}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Starting Points & Next Steps */}
+              <div>
+                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🚀 What Next? (Onboarding Guide)</h3>
+                <div style={{ backgroundColor: 'var(--bg-base)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0' }}>Suggested Learning Path</h4>
+                  <ol style={{ paddingLeft: '1.5rem', margin: '0 0 1rem 0' }}>
+                    {analysis.learning.tutorialSteps?.map((step: string, i: number) => (
+                      <li key={i} style={{ marginBottom: '0.4rem', lineHeight: '1.5' }}>{step}</li>
+                    ))}
+                  </ol>
+
+                  <h4 style={{ margin: '0 0 0.5rem 0' }}>Key Entry Points to Inspect</h4>
+                  <div className="tag-list" style={{ marginTop: '0.5rem' }}>
+                    {analysis.explainIt.entryPoints.map((entry) => (
+                      <span key={entry.path} className="tag-pill" style={{fontFamily: 'monospace'}}>{entry.path}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
