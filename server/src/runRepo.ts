@@ -1,13 +1,15 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { rm } from 'node:fs/promises';
+import type { ChildProcess } from 'node:child_process';
+import type { StackItem } from './types.js';
 
 const execAsync = promisify(exec);
 
-const runningProcesses = new Map<string, { port: number, process: unknown, dir: string }>();
+const runningProcesses = new Map<string, { port: number, process: ChildProcess, dir: string }>();
 let nextPort = 3100;
 
-export async function startRepo(dir: string, stack: unknown[]): Promise<{ port: number, url: string }> {
+export async function startRepo(dir: string, stack: StackItem[]): Promise<{ port: number, url: string }> {
   const port = nextPort++;
   
   try {

@@ -26,7 +26,14 @@ app.post('/api/run', async (req, res) => {
        analysis = fresh
     }
 
-    const { url } = await startRepo((analysis as any)._repoDir, analysis.runIt.detectedStack.map(n => ({name: n})))
+    const { url } = await startRepo(
+      (analysis as any)._repoDir,
+      analysis.runIt.detectedStack.map((name) => ({
+        name,
+        confidence: 'medium' as const,
+        evidence: 'Derived from detected stack names',
+      })),
+    )
     
     // Update the preview URL in memory 
     analysis.runIt.previewUrl = url;

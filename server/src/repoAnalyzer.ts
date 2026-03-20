@@ -411,7 +411,7 @@ export function compareAnalyses(left: RepoAnalysis, right: RepoAnalysis): Compar
   }
 }
 
-export function answerQuestion(analysis: unknown, question: string) {
+export function answerQuestion(analysis: RepoAnalysis, question: string) {
   const query = question.toLowerCase()
   const hits = analysis.structure.folderTree
     .filter((file: string) => file.toLowerCase().includes(query.split(' ')[0]))
