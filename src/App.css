@@ -1,8 +1,31 @@
 /* --- App Shell --- */
 .app-shell {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 3rem 1.5rem;
+  padding: 3.5rem 1.75rem;
+  background: linear-gradient(180deg, rgba(19, 42, 22, 0.92), rgba(11, 26, 15, 0.94));
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 0 var(--shadow-strong), 0 22px 32px var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 18px 18px, 18px 18px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Remove leftover ambient styles from previous design */
@@ -13,24 +36,37 @@
 /* --- Typography & Basics --- */
 h1, h2, h3 { 
   margin: 0; 
-  font-weight: 600; 
   color: var(--text); 
-  letter-spacing: -0.025em; 
+  letter-spacing: 0.05em; 
+  font-family: 'Press Start 2P', cursive;
+  text-transform: uppercase;
 }
 
 h1 { 
-  font-size: clamp(2.5rem, 5vw, 4rem); 
-  font-weight: 700; 
-  line-height: 1.1; 
+  font-size: clamp(2.25rem, 4vw, 3.25rem); 
+  line-height: 1.15; 
+  text-shadow: 0 4px 0 #0c130c;
   margin-bottom: 0.75rem; 
+}
+
+h2 {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p, label, input, button, span, li {
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 p.subtitle { 
   margin: 0 auto 2.5rem; 
   color: var(--muted); 
-  font-size: 1.125rem; 
-  max-width: 600px; 
-  line-height: 1.6; 
+  font-size: 1.05rem; 
+  max-width: 660px; 
+  line-height: 1.65; 
 }
 
 /* --- Hero Section --- */
@@ -42,15 +78,17 @@ p.subtitle {
   align-items: center;
   text-align: center;
   padding: 3rem 0;
+  gap: 1.5rem;
 }
 
 .kicker {
   color: var(--accent);
-  font-weight: 600;
-  font-size: 0.875rem;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 0 #0c130c;
 }
 
 .hero-copy {
@@ -58,32 +96,37 @@ p.subtitle {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  gap: 0.75rem;
 }
 
 .hero-copy h2 { 
-  font-size: clamp(1.25rem, 2.5vw, 1.75rem); 
+  font-size: clamp(1.1rem, 2.2vw, 1.5rem); 
   color: var(--muted-soft); 
-  font-weight: 400;
-  margin-bottom: 1rem; 
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.25rem; 
+  text-transform: none;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 .hero-badges { 
   display: flex; 
   flex-wrap: wrap; 
-  gap: 0.75rem; 
+  gap: 0.85rem; 
   justify-content: center; 
-  margin-top: 1rem;
-  margin-bottom: 3rem; 
+  margin-top: 0.75rem;
+  margin-bottom: 2.5rem; 
 }
 
 .hero-badges span {
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  padding: 0.45rem 0.95rem;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #1d3c20, #132417);
+  border: 2px solid var(--line);
   color: var(--muted-soft);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 0 var(--shadow-strong);
 }
 
 /* --- Landing Feature Planks --- */
@@ -103,90 +146,95 @@ p.subtitle {
 }
 
 .plank-button {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #2f7a32 0%, #2a612d 16%, #1c3b20 16%, #1a2d1b 100%);
+  border: 2px solid var(--line);
   color: var(--muted-soft);
   border-radius: 8px;
-  padding: 0.875rem 1.25rem;
+  padding: 1rem 1.25rem;
   font-size: 0.95rem;
-  font-family: inherit;
-  font-weight: 500;
+  font-family: 'Press Start 2P', cursive;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
   flex: 1 1 180px;
-  max-width: 220px;
+  max-width: 240px;
   display: flex;
   justify-content: center;
   align-items: center;
+  text-transform: uppercase;
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px #3c552d;
 }
 
 .plank-button:hover {
-  border-color: var(--line-hover);
-  background: var(--line);
-  color: var(--text);
-  transform: translateY(-1px);
+  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px #4a6b3b;
+  transform: translateY(-2px);
+  filter: brightness(1.05);
 }
 
 .plank-button.active {
   border-color: var(--accent);
-  background: rgba(59, 130, 246, 0.08);
-  color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 10px 0 #0c130c, 0 0 0 2px var(--accent);
+  color: #0f1d0f;
+  background: linear-gradient(180deg, #9bf16d 0%, #7bd55c 18%, #285027 18%, #1a2d1b 100%);
 }
 
 /* --- Buttons --- */
 .cta {
-  background: var(--accent);
-  color: #ffffff;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: #0c150c;
+  border: 2px solid #0f230f;
+  padding: 0.85rem 1.6rem;
+  border-radius: 8px;
+  font-weight: 700;
   font-size: 0.95rem;
-  font-family: inherit;
+  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
+  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px rgba(12, 19, 12, 0.3);
 }
 
 .cta:hover:not(:disabled) { 
-  background: var(--accent-hover); 
+  transform: translateY(-2px);
+  box-shadow: 0 10px 0 var(--shadow-strong);
+  filter: brightness(1.05);
 }
 
 .cta:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: 0 6px 0 var(--shadow-strong);
 }
 
 .hero-cta {
-  margin-top: 2rem;
-  font-size: 1.05rem;
-  padding: 0.875rem 2.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  margin-top: 1.25rem;
+  font-size: 1rem;
+  padding: 1rem 2.5rem;
 }
 
 .hero-cta:hover {
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-  transform: translateY(-1px);
+  transform: translateY(-3px);
 }
 
 .ghost {
-  background: transparent;
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #1a2f1c, #0f1d10);
+  border: 2px solid var(--line);
   color: var(--muted-soft);
   padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-family: inherit;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px rgba(31, 58, 33, 0.65);
 }
 
 .ghost:hover { 
-  background: var(--panel); 
-  color: var(--text);
-  border-color: var(--line-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 var(--shadow-strong);
+  filter: brightness(1.08);
 }
 
 /* --- Feature Selector Grid --- */
@@ -198,30 +246,35 @@ p.subtitle {
 }
 
 .feature-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #162f19, #0e1c11);
+  border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  transition: border-color 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 8px 0 var(--shadow-strong);
 }
 
 .feature-card:hover {
-  border-color: var(--line-hover);
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 0 var(--shadow-strong);
 }
 
 .feature-card span { 
   color: var(--accent); 
-  font-size: 0.8125rem; 
-  font-weight: 600; 
+  font-size: 0.75rem; 
+  font-weight: 700; 
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .feature-card h3 {
-  font-size: 1.125rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
 }
 
 .feature-card p { 
@@ -233,22 +286,24 @@ p.subtitle {
 }
 
 .feature-card button {
-  background: var(--bg);
-  color: var(--muted-soft);
-  border: 1px solid var(--line);
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.9rem;
+  background: linear-gradient(180deg, #2f7a32 0%, #1c3b20 100%);
+  color: #0c150c;
+  border: 2px solid var(--line);
+  padding: 0.75rem 1.1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
   cursor: pointer;
   margin-top: 0.75rem;
-  transition: all 0.2s;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px #3c552d;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .feature-card button:hover { 
-  border-color: var(--accent); 
-  color: var(--accent); 
-  background: rgba(59, 130, 246, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 var(--shadow-strong);
+  filter: brightness(1.08);
 }
 
 /* --- Workspace Area --- */
@@ -256,49 +311,52 @@ p.subtitle {
   margin-bottom: 2rem; 
 }
 
-.section-header h2 {
-  font-size: 1.75rem;
-}
-
 .section-header p { 
   color: var(--muted); 
-  font-size: 1.05rem; 
-  margin-top: 0.5rem; 
+  font-size: 1rem; 
+  margin-top: 0.65rem; 
+  line-height: 1.6;
 }
 
 .workspace-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #132a16, #0c190f);
+  border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  box-shadow: 0 10px 0 var(--shadow-strong);
 }
 
 .workspace-card label { 
-  font-size: 0.875rem; 
-  font-weight: 500; 
+  font-size: 0.9rem; 
+  font-weight: 600; 
   color: var(--muted-soft); 
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Press Start 2P', cursive;
 }
 
 input {
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: #0a160d;
+  border: 2px solid var(--line);
   color: var(--text);
   padding: 0.875rem 1rem;
   border-radius: 8px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Space Mono', monospace;
   font-size: 0.95rem;
   width: 100%;
-  transition: all 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   box-sizing: border-box;
+  box-shadow: inset 0 0 0 2px #0c130c;
 }
 
 input:focus { 
   outline: none; 
   border-color: var(--accent); 
-  box-shadow: 0 0 0 1px var(--accent); 
+  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 2px #0c130c; 
+  transform: translateY(-1px);
 }
 
 .workspace-card .cta {
@@ -308,14 +366,15 @@ input:focus {
 
 /* --- Results Area --- */
 .result-block {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #0f2013, #0a140c);
+  border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1.5rem;
   color: var(--muted-soft);
   line-height: 1.6;
   font-size: 0.95rem;
+  box-shadow: 0 10px 0 var(--shadow-strong);
 }
 
 .result-block p { 
@@ -344,15 +403,16 @@ input:focus {
 .error { 
   color: #ef4444; 
   font-size: 0.9rem; 
-  font-weight: 500; 
+  font-weight: 700; 
   margin: 0;
   padding-top: 0.5rem;
+  text-transform: uppercase;
 }
 
 /* --- Responsiveness --- */
 @media (max-width: 768px) {
   .app-shell { 
-    padding: 1.5rem 1rem; 
+    padding: 2rem 1rem; 
   }
   
   .feature-row { 
@@ -367,6 +427,7 @@ input:focus {
 
   .workspace-card .cta {
     align-self: stretch;
+    text-align: center;
   }
 
   .workspace-actions {
@@ -383,47 +444,50 @@ input:focus {
 }
 
 .stat-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #132a16, #0f1d11);
+  border: 2px solid var(--line);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 8px 0 var(--shadow-strong);
 }
 
 .stat-card h4 {
   margin: 0 0 0.5rem;
   color: var(--muted-soft);
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .stat-card .stat-value {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.25rem;
+  font-weight: 800;
   color: var(--text);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   margin-bottom: 0;
 }
 
 .stat-card .stat-sub {
   color: var(--muted);
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  margin-top: 0.35rem;
 }
 
 .code-snippet {
-  background: #000000;
-  border: 1px solid var(--line);
+  background: #050b06;
+  border: 2px solid var(--line);
   padding: 1rem;
-  border-radius: 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.875rem;
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
   color: var(--accent);
   overflow-x: auto;
   margin: 0.75rem 0;
+  box-shadow: inset 0 0 0 2px #0c130c;
 }
 
 .list-group {
@@ -439,7 +503,10 @@ input:focus {
   color: var(--text);
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .tag-list {
@@ -449,12 +516,13 @@ input:focus {
 }
 
 .tag-pill {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--line);
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
+  background: linear-gradient(180deg, #1e3c21, #132516);
+  border: 2px solid var(--line);
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: var(--muted-soft);
+  box-shadow: 0 4px 0 var(--shadow-strong), inset 0 0 0 2px #0c130c;
 }
 
 .issue-list {
@@ -468,7 +536,7 @@ input:focus {
   align-items: flex-start;
   gap: 1rem;
   padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
 }
 
 .issue-item:last-child {
@@ -476,33 +544,36 @@ input:focus {
 }
 
 .issue-severity-high {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  color: #0c150c;
+  background: linear-gradient(180deg, #ff6961, #c0392b);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
+  box-shadow: 0 4px 0 var(--shadow-strong);
 }
 
 .issue-severity-medium {
-  color: #eab308;
-  background: rgba(234, 179, 8, 0.1);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  color: #0c150c;
+  background: linear-gradient(180deg, #ffd166, #d4a017);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
+  box-shadow: 0 4px 0 var(--shadow-strong);
 }
 
 .issue-title {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   margin-bottom: 0.25rem;
+  letter-spacing: 0.01em;
 }
 
 .issue-file {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8125rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
   color: var(--muted);
 }
