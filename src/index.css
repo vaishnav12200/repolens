@@ -8,6 +8,7 @@
   --line-hover: #2f5335;
   --accent: #6ee07d;
   --accent-hover: #9bf16d;
+  --accent-2: #4adba8;
   --text: #f3ffe1;
   --muted: #c7d8b5;
   --muted-soft: #e8f7d7;
@@ -25,15 +26,21 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    radial-gradient(circle at 25% 25%, rgba(110, 224, 125, 0.08), transparent 36%),
-    radial-gradient(circle at 70% 60%, rgba(155, 241, 109, 0.07), transparent 40%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 18% 20%, rgba(110, 224, 125, 0.12), transparent 32%),
+    radial-gradient(circle at 78% 70%, rgba(74, 219, 168, 0.12), transparent 36%),
+    radial-gradient(ellipse at 50% 120%, rgba(9, 26, 15, 0.95), rgba(9, 26, 15, 0.2)),
     var(--bg);
   background-size: 12px 12px, 12px 12px, 100% 100%, 100% 100%, auto;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(110, 224, 125, 0.35);
+  color: #0c150c;
 }
 
 a {
