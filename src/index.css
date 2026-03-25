@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
-  --bg: #0b1a0f;
-  --bg-2: #102315;
-  --panel: #132a16;
-  --line: #1d3a21;
-  --line-hover: #2f5335;
-  --accent: #6ee07d;
-  --accent-hover: #9bf16d;
-  --accent-2: #4adba8;
-  --text: #f3ffe1;
-  --muted: #c7d8b5;
-  --muted-soft: #e8f7d7;
-  --shadow-strong: #0a120b;
-  --shadow-soft: rgba(0, 0, 0, 0.25);
+  --bg: #0c1014;
+  --bg-2: #0f151c;
+  --panel: #111821;
+  --line: #1b2530;
+  --line-hover: #263445;
+  --accent: #5ce1ff; /* neon redstone-blue */
+  --accent-hover: #9ae8ff;
+  --accent-2: #4ee38b; /* emerald-green pop */
+  --text: #e9f4ff;
+  --muted: #9ab0c5;
+  --muted-soft: #c7d7e6;
+  --shadow-strong: #05080c;
+  --shadow-soft: rgba(0, 0, 0, 0.35);
 
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   color: var(--text);
@@ -28,19 +28,20 @@ body {
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 18% 20%, rgba(110, 224, 125, 0.12), transparent 32%),
-    radial-gradient(circle at 78% 70%, rgba(74, 219, 168, 0.12), transparent 36%),
-    radial-gradient(ellipse at 50% 120%, rgba(9, 26, 15, 0.95), rgba(9, 26, 15, 0.2)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 12%, transparent 12%),
+    radial-gradient(circle at 15% 25%, rgba(92, 225, 255, 0.08), transparent 32%),
+    radial-gradient(circle at 80% 70%, rgba(78, 227, 139, 0.08), transparent 34%),
+    radial-gradient(ellipse at 50% 115%, rgba(7, 10, 14, 0.95), rgba(7, 10, 14, 0.1)),
     var(--bg);
-  background-size: 12px 12px, 12px 12px, 100% 100%, 100% 100%, auto;
+  background-size: 12px 12px, 12px 12px, 28px 28px, 100% 100%, 100% 100%, auto;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(110, 224, 125, 0.35);
-  color: #0c150c;
+  background: rgba(92, 225, 255, 0.25);
+  color: #031018;
 }
 
 a {

@@ -3,10 +3,10 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 3.5rem 1.75rem;
-  background: linear-gradient(180deg, rgba(19, 42, 22, 0.92), rgba(11, 26, 15, 0.94));
+  background: linear-gradient(145deg, rgba(16, 23, 31, 0.96), rgba(10, 14, 19, 0.94));
   border: 2px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 0 var(--shadow-strong), 0 22px 32px var(--shadow-soft), inset 0 0 0 2px rgba(255, 255, 255, 0.02);
+  border-radius: 14px;
+  box-shadow: 0 14px 0 var(--shadow-strong), 0 22px 40px var(--shadow-soft), inset 0 0 0 2px rgba(255, 255, 255, 0.02);
   position: relative;
   overflow: hidden;
 }
@@ -29,7 +29,7 @@
   inset: 18px;
   border: 2px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  box-shadow: 0 0 30px rgba(110, 224, 125, 0.08), inset 0 0 20px rgba(74, 219, 168, 0.06);
+  box-shadow: 0 0 32px rgba(92, 225, 255, 0.12), 0 0 44px rgba(78, 227, 139, 0.08), inset 0 0 20px rgba(92, 225, 255, 0.04);
   pointer-events: none;
 }
 
@@ -55,7 +55,7 @@ h1, h2, h3 {
 h1 { 
   font-size: clamp(2.25rem, 4vw, 3.25rem); 
   line-height: 1.15; 
-  text-shadow: 0 4px 0 #0c130c;
+  text-shadow: 0 4px 0 #05080c, 0 0 24px rgba(92, 225, 255, 0.25);
   margin-bottom: 0.75rem; 
 }
 
@@ -92,13 +92,13 @@ p.subtitle {
 }
 
 .kicker {
-  color: var(--accent);
+  color: var(--accent-2);
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 0.5rem;
-  text-shadow: 0 2px 0 #0c130c, 0 0 12px rgba(110, 224, 125, 0.4);
+  text-shadow: 0 2px 0 #05080c, 0 0 12px rgba(92, 225, 255, 0.4);
 }
 
 .hero-copy {
@@ -131,12 +131,12 @@ p.subtitle {
 .hero-badges span {
   padding: 0.45rem 0.95rem;
   border-radius: 6px;
-  background: linear-gradient(180deg, #1d3c20, #132417);
+  background: linear-gradient(180deg, rgba(35, 46, 59, 0.92), rgba(21, 28, 36, 0.96));
   border: 2px solid var(--line);
   color: var(--muted-soft);
   font-size: 0.85rem;
   font-weight: 600;
-  box-shadow: 0 4px 0 var(--shadow-strong), 0 0 16px rgba(74, 219, 168, 0.18);
+  box-shadow: 0 4px 0 var(--shadow-strong), 0 0 16px rgba(92, 225, 255, 0.18);
   position: relative;
   overflow: hidden;
 }
@@ -171,7 +171,7 @@ p.subtitle {
 }
 
 .plank-button {
-  background: linear-gradient(180deg, #2f7a32 0%, #2a612d 16%, #1c3b20 16%, #1a2d1b 100%);
+  background: linear-gradient(180deg, #1f2a36 0%, #17202a 16%, #121821 16%, #10151c 100%);
   border: 2px solid var(--line);
   color: var(--muted-soft);
   border-radius: 8px;
@@ -188,29 +188,29 @@ p.subtitle {
   justify-content: center;
   align-items: center;
   text-transform: uppercase;
-  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px #3c552d;
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px #253140;
 }
 
 .plank-button:hover {
-  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px #4a6b3b;
+  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px #2f3f52;
   transform: translateY(-2px);
-  filter: brightness(1.05);
-  text-shadow: 0 0 10px rgba(155, 241, 109, 0.55);
+  filter: brightness(1.08);
+  text-shadow: 0 0 12px rgba(92, 225, 255, 0.55);
 }
 
 .plank-button.active {
   border-color: var(--accent);
-  box-shadow: 0 10px 0 #0c130c, 0 0 0 2px var(--accent);
-  color: #0f1d0f;
-  background: linear-gradient(180deg, #9bf16d 0%, #7bd55c 18%, #285027 18%, #1a2d1b 100%);
-  text-shadow: 0 0 12px rgba(155, 241, 109, 0.85);
+  box-shadow: 0 10px 0 #05080c, 0 0 0 2px var(--accent);
+  color: #031018;
+  background: linear-gradient(180deg, #5ce1ff 0%, #2f95b3 18%, #15202b 18%, #0f141b 100%);
+  text-shadow: 0 0 14px rgba(92, 225, 255, 0.9);
 }
 
 /* --- Buttons --- */
 .cta {
   background: linear-gradient(180deg, var(--accent) 0%, var(--accent-hover) 100%);
-  color: #0c150c;
-  border: 2px solid #0f230f;
+  color: #041018;
+  border: 2px solid #0b1b24;
   padding: 0.85rem 1.6rem;
   border-radius: 8px;
   font-weight: 700;
@@ -219,7 +219,7 @@ p.subtitle {
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
-  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px rgba(12, 19, 12, 0.3);
+  box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px rgba(4, 16, 24, 0.35);
 }
 
 .cta:hover:not(:disabled) { 
@@ -246,7 +246,7 @@ p.subtitle {
 }
 
 .ghost {
-  background: linear-gradient(180deg, #1a2f1c, #0f1d10);
+  background: linear-gradient(180deg, #18212c, #0f151d);
   border: 2px solid var(--line);
   color: var(--muted-soft);
   padding: 0.75rem 1.5rem;
@@ -256,7 +256,7 @@ p.subtitle {
   font-size: 0.85rem;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
-  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px rgba(31, 58, 33, 0.65);
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px rgba(38, 53, 69, 0.65);
 }
 
 .ghost:hover { 
@@ -275,7 +275,7 @@ p.subtitle {
 }
 
 .feature-card {
-  background: linear-gradient(180deg, #162f19, #0e1c11);
+  background: linear-gradient(180deg, #141d28, #0d1219);
   border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
@@ -283,7 +283,7 @@ p.subtitle {
   flex-direction: column;
   gap: 0.75rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  box-shadow: 0 8px 0 var(--shadow-strong);
+  box-shadow: 0 8px 0 var(--shadow-strong), 0 0 22px rgba(92, 225, 255, 0.08);
   backdrop-filter: blur(4px);
 }
 
@@ -350,14 +350,14 @@ p.subtitle {
 }
 
 .workspace-card {
-  background: linear-gradient(180deg, #132a16, #0c190f);
+  background: linear-gradient(180deg, #121a25, #0c1018);
   border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  box-shadow: 0 10px 0 var(--shadow-strong);
+  box-shadow: 0 10px 0 var(--shadow-strong), 0 0 22px rgba(92, 225, 255, 0.08);
   backdrop-filter: blur(2px);
 }
 
@@ -371,7 +371,7 @@ p.subtitle {
 }
 
 input {
-  background: #0a160d;
+  background: #0a0f17;
   border: 2px solid var(--line);
   color: var(--text);
   padding: 0.875rem 1rem;
@@ -381,13 +381,13 @@ input {
   width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   box-sizing: border-box;
-  box-shadow: inset 0 0 0 2px #0c130c;
+  box-shadow: inset 0 0 0 2px #05080c;
 }
 
 input:focus { 
   outline: none; 
   border-color: var(--accent); 
-  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 2px #0c130c; 
+  box-shadow: 0 0 0 2px var(--accent), inset 0 0 0 2px #05080c, 0 0 18px rgba(92, 225, 255, 0.25); 
   transform: translateY(-1px);
 }
 
@@ -398,7 +398,7 @@ input:focus {
 
 /* --- Results Area --- */
 .result-block {
-  background: linear-gradient(180deg, #0f2013, #0a140c);
+  background: linear-gradient(180deg, #0f161f, #0a0f16);
   border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.5rem;
@@ -406,7 +406,7 @@ input:focus {
   color: var(--muted-soft);
   line-height: 1.6;
   font-size: 0.95rem;
-  box-shadow: 0 10px 0 var(--shadow-strong), 0 0 18px rgba(74, 219, 168, 0.1);
+  box-shadow: 0 10px 0 var(--shadow-strong), 0 0 20px rgba(92, 225, 255, 0.12);
 }
 
 .result-block p { 
@@ -476,7 +476,7 @@ input:focus {
 }
 
 .stat-card {
-  background: linear-gradient(180deg, #132a16, #0f1d11);
+  background: linear-gradient(180deg, #111b26, #0d141d);
   border: 2px solid var(--line);
   border-radius: 12px;
   padding: 1.25rem;
@@ -555,13 +555,13 @@ input:focus {
 }
 
 .tag-pill {
-  background: linear-gradient(180deg, #1e3c21, #132516);
+  background: linear-gradient(180deg, #1a2734, #101823);
   border: 2px solid var(--line);
   padding: 0.35rem 0.85rem;
   border-radius: 8px;
   font-size: 0.85rem;
   color: var(--muted-soft);
-  box-shadow: 0 4px 0 var(--shadow-strong), inset 0 0 0 2px #0c130c;
+  box-shadow: 0 4px 0 var(--shadow-strong), inset 0 0 0 2px #05080c;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -590,7 +590,7 @@ input:focus {
 
 .issue-severity-high {
   color: #0c150c;
-  background: linear-gradient(180deg, #ff6961, #c0392b);
+  background: linear-gradient(180deg, #ff6b6b, #9c1d1d);
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -601,7 +601,7 @@ input:focus {
 
 .issue-severity-medium {
   color: #0c150c;
-  background: linear-gradient(180deg, #ffd166, #d4a017);
+  background: linear-gradient(180deg, #ffd166, #b8860b);
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.75rem;
