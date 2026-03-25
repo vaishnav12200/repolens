@@ -6,7 +6,7 @@
   background: linear-gradient(180deg, rgba(19, 42, 22, 0.92), rgba(11, 26, 15, 0.94));
   border: 2px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 12px 0 var(--shadow-strong), 0 22px 32px var(--shadow-soft);
+  box-shadow: 0 12px 0 var(--shadow-strong), 0 22px 32px var(--shadow-soft), inset 0 0 0 2px rgba(255, 255, 255, 0.02);
   position: relative;
   overflow: hidden;
 }
@@ -20,6 +20,16 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 18px 18px, 18px 18px;
   opacity: 0.35;
+  pointer-events: none;
+}
+
+.app-shell::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(110, 224, 125, 0.08), inset 0 0 20px rgba(74, 219, 168, 0.06);
   pointer-events: none;
 }
 
@@ -88,7 +98,7 @@ p.subtitle {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 0.5rem;
-  text-shadow: 0 2px 0 #0c130c;
+  text-shadow: 0 2px 0 #0c130c, 0 0 12px rgba(110, 224, 125, 0.4);
 }
 
 .hero-copy {
@@ -126,7 +136,22 @@ p.subtitle {
   color: var(--muted-soft);
   font-size: 0.85rem;
   font-weight: 600;
-  box-shadow: 0 4px 0 var(--shadow-strong);
+  box-shadow: 0 4px 0 var(--shadow-strong), 0 0 16px rgba(74, 219, 168, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badges span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.15) 35%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+}
+
+.hero-badges span:hover::after {
+  transform: translateX(120%);
 }
 
 /* --- Landing Feature Planks --- */
@@ -170,6 +195,7 @@ p.subtitle {
   box-shadow: 0 8px 0 var(--shadow-strong), inset 0 0 0 2px #4a6b3b;
   transform: translateY(-2px);
   filter: brightness(1.05);
+  text-shadow: 0 0 10px rgba(155, 241, 109, 0.55);
 }
 
 .plank-button.active {
@@ -177,6 +203,7 @@ p.subtitle {
   box-shadow: 0 10px 0 #0c130c, 0 0 0 2px var(--accent);
   color: #0f1d0f;
   background: linear-gradient(180deg, #9bf16d 0%, #7bd55c 18%, #285027 18%, #1a2d1b 100%);
+  text-shadow: 0 0 12px rgba(155, 241, 109, 0.85);
 }
 
 /* --- Buttons --- */
@@ -199,6 +226,7 @@ p.subtitle {
   transform: translateY(-2px);
   box-shadow: 0 10px 0 var(--shadow-strong);
   filter: brightness(1.05);
+  text-shadow: 0 0 10px rgba(14, 27, 14, 0.6);
 }
 
 .cta:disabled {
@@ -235,6 +263,7 @@ p.subtitle {
   transform: translateY(-2px);
   box-shadow: 0 8px 0 var(--shadow-strong);
   filter: brightness(1.08);
+  text-shadow: 0 0 8px rgba(110, 224, 125, 0.55);
 }
 
 /* --- Feature Selector Grid --- */
@@ -255,12 +284,14 @@ p.subtitle {
   gap: 0.75rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   box-shadow: 0 8px 0 var(--shadow-strong);
+  backdrop-filter: blur(4px);
 }
 
 .feature-card:hover {
   border-color: var(--accent);
   transform: translateY(-3px);
   box-shadow: 0 10px 0 var(--shadow-strong);
+  filter: saturate(1.1);
 }
 
 .feature-card span { 
@@ -327,6 +358,7 @@ p.subtitle {
   flex-direction: column;
   gap: 1.25rem;
   box-shadow: 0 10px 0 var(--shadow-strong);
+  backdrop-filter: blur(2px);
 }
 
 .workspace-card label { 
@@ -374,7 +406,7 @@ input:focus {
   color: var(--muted-soft);
   line-height: 1.6;
   font-size: 0.95rem;
-  box-shadow: 0 10px 0 var(--shadow-strong);
+  box-shadow: 0 10px 0 var(--shadow-strong), 0 0 18px rgba(74, 219, 168, 0.1);
 }
 
 .result-block p { 
@@ -451,6 +483,7 @@ input:focus {
   display: flex;
   flex-direction: column;
   box-shadow: 0 8px 0 var(--shadow-strong);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s;
 }
 
 .stat-card h4 {
@@ -469,6 +502,12 @@ input:focus {
   color: var(--text);
   margin-top: 0.25rem;
   margin-bottom: 0;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 0 var(--shadow-strong);
+  filter: brightness(1.08);
 }
 
 .stat-card .stat-sub {
@@ -523,6 +562,12 @@ input:focus {
   font-size: 0.85rem;
   color: var(--muted-soft);
   box-shadow: 0 4px 0 var(--shadow-strong), inset 0 0 0 2px #0c130c;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tag-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--shadow-strong), inset 0 0 0 2px var(--accent);
 }
 
 .issue-list {
