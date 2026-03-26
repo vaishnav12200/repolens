@@ -1,19 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
-  --bg: #0c1014;
-  --bg-2: #0f151c;
-  --panel: #111821;
-  --line: #1b2530;
-  --line-hover: #263445;
-  --accent: #5ce1ff; /* neon redstone-blue */
-  --accent-hover: #9ae8ff;
-  --accent-2: #4ee38b; /* emerald-green pop */
-  --text: #e9f4ff;
-  --muted: #9ab0c5;
-  --muted-soft: #c7d7e6;
-  --shadow-strong: #05080c;
-  --shadow-soft: rgba(0, 0, 0, 0.35);
+  --bg: #050c18;
+  --bg-2: #0b1324;
+  --panel: #0e1627;
+  --line: #16233a;
+  --line-hover: #20324f;
+  --accent: #4da3ff; /* electric blue */
+  --accent-hover: #6ec2ff;
+  --accent-2: #6af0ff; /* cyan glow */
+  --text: #e8f1ff;
+  --muted: #9fb4d1;
+  --muted-soft: #c8d8ed;
+  --shadow-strong: #02060c;
+  --shadow-soft: rgba(0, 0, 0, 0.4);
 
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   color: var(--text);
@@ -26,21 +26,18 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 12%, transparent 12%),
-    radial-gradient(circle at 15% 25%, rgba(92, 225, 255, 0.08), transparent 32%),
-    radial-gradient(circle at 80% 70%, rgba(78, 227, 139, 0.08), transparent 34%),
-    radial-gradient(ellipse at 50% 115%, rgba(7, 10, 14, 0.95), rgba(7, 10, 14, 0.1)),
-    var(--bg);
-  background-size: 12px 12px, 12px 12px, 28px 28px, 100% 100%, 100% 100%, auto;
+    linear-gradient(120deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 25% 20%, rgba(77, 163, 255, 0.12), transparent 32%),
+    radial-gradient(circle at 80% 70%, rgba(106, 240, 255, 0.12), transparent 36%),
+    #050c18;
+  background-size: 18px 18px, 100% 100%, 100% 100%, auto;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(92, 225, 255, 0.25);
+  background: rgba(77, 163, 255, 0.25);
   color: #031018;
 }
 
