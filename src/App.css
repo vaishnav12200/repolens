@@ -489,11 +489,11 @@ input:focus {
 .stat-card h4 {
   margin: 0 0 0.5rem;
   color: var(--muted-soft);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 0.1em;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 .stat-card .stat-value {
@@ -544,8 +544,8 @@ input:focus {
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--line);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 0.08em;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 .tag-list {
