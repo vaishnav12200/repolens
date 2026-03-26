@@ -3,10 +3,10 @@
   max-width: 1100px;
   margin: 0 auto;
   padding: 3.5rem 1.75rem;
-  background: linear-gradient(145deg, rgba(16, 23, 31, 0.96), rgba(10, 14, 19, 0.94));
-  border: 2px solid var(--line);
+  background: linear-gradient(150deg, rgba(14, 22, 36, 0.92), rgba(7, 12, 24, 0.96));
+  border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 14px 0 var(--shadow-strong), 0 22px 40px var(--shadow-soft), inset 0 0 0 2px rgba(255, 255, 255, 0.02);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   position: relative;
   overflow: hidden;
 }
@@ -27,9 +27,9 @@
   content: '';
   position: absolute;
   inset: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  box-shadow: 0 0 32px rgba(92, 225, 255, 0.12), 0 0 44px rgba(78, 227, 139, 0.08), inset 0 0 20px rgba(92, 225, 255, 0.04);
+  box-shadow: 0 0 32px rgba(77, 163, 255, 0.16), 0 0 44px rgba(106, 240, 255, 0.14), inset 0 0 20px rgba(77, 163, 255, 0.06);
   pointer-events: none;
 }
 
