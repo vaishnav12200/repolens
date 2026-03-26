@@ -363,11 +363,11 @@ p.subtitle {
 
 .workspace-card label { 
   font-size: 0.9rem; 
-  font-weight: 600; 
+  font-weight: 700; 
   color: var(--muted-soft); 
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 0.08em;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
 }
 
 input {
