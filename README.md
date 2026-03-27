@@ -18,15 +18,23 @@ AI-native repo intelligence: analyze any public Git repository, spin up a runnab
 
 ## Architecture
 
-- Frontend: React 19 + TypeScript + Vite (SPA UI for selecting capabilities and viewing results).
+- Frontend: React 19 + TypeScript + Vite + Tailwind CSS + Framer Motion + Three.js.
 - Backend: Node.js + Express + TypeScript.
+- Visualization: D3 force graph for structure/call graph rendering.
+- Docs preview: Prism syntax highlighting for generated markdown.
 - Analysis engine: clones the target repo (shallow), walks files, samples contents, and builds heuristics for stack, entry points, structure, and risks. Uses git history locally for stats.
+- AI layer: OpenAI-backed optional enhancement for summary, architecture, learning steps, glossary, and chat responses (with heuristic fallback if no API key).
 - Sandbox runner: installs dependencies and attempts to start the repo on an ephemeral port based on detected stack hints (Node/Vite/Python heuristics).
 
 ## Prerequisites
 
 - Node.js 20+ (for native ESM, `tsx`, and Vite 8).
 - Git installed and reachable on PATH (for cloning and git stats).
+
+### Optional environment variables
+
+- `OPENAI_API_KEY` — enables LLM-enhanced analysis and chat output.
+- `OPENAI_MODEL` — override model name (default: `gpt-4.1-mini`).
 
 ## Getting started
 
@@ -73,7 +81,7 @@ Base URL: `http://localhost:8787`
 	"explainIt": { "summary": "...", "stackBreakdown": [...], "entryPoints": [{"path": "src/main.tsx"}], "businessLogic": [...] },
 	"structure": { "folderTree": [...], "architecture": [...], "callGraph": [...], "dependencyGraph": [...] },
 	"issues": { "security": [...], "outdated": [...], "smells": [...], "missingErrorHandling": [...], "hardcodedSecrets": [...] },
-	"stats": { "mostChangedFiles": [...], "busFactorByFolder": [...], "codeAgeHeatmap": [...], "commitVelocity90d": 0, "testCoverageEstimate": 0 },
+	"stats": { "mostChangedFiles": [...], "busFactorByFolder": [...], "codeAgeHeatmap": [...], "commitVelocity90d": 0, "testCoverageEstimate": 0, "repoScore": 7.4 },
 	"testing": { "detectedTestCommands": ["npm test"], "testFiles": 0, "untestedCandidateFiles": [...] },
 	"docs": { "readme": "...", "apiOverview": "...", "onboarding": "..." },
 	"learning": { "tutorialSteps": [...], "importantFiles": [...], "glossary": [...] }
@@ -83,19 +91,28 @@ Base URL: `http://localhost:8787`
 ## Frontend usage
 
 1. Open the app at http://localhost:5173.
-2. Pick a capability (Run, Explain, Structure, Chat, Issues, Stats, Test, Compare, Docs, Learn) from the landing or selector screen.
-3. Enter a public Git repo URL (and an optional second URL for Compare) then click the CTA to trigger the corresponding API call.
-4. For Docs, use the download button to export the generated README/API/onboarding bundle.
+2. From the landing page, paste a public GitHub URL and click **Analyze Repo**.
+3. In workspace mode, use the left capability rail (Explain, Structure, Issues, Stats, Run, Chat, Docs, Compare).
+4. Watch the right terminal panel for simulated execution logs (clone/analyze/detect/render).
+5. Use Docs mode to inspect generated markdown and download it as a file.
+6. Compare mode accepts two repo URLs and returns side-by-side quality heuristics.
 
 ## Folder layout
 
-- [src](src) — React SPA (screens for landing, selector, workspace; feature result rendering).
-- [server/src](server/src) — Express API, repo analyzer, sandbox runner, shared types.
+- [src/components](src/components) — landing, workspace, and visualization UI components.
+- [src/pages](src/pages) — `LandingPage` and `WorkspacePage` screens.
+- [src/features](src/features) — feature-level rendering logic (`FeatureContent`).
+- [src/services](src/services) — API client wrapper.
+- [src/types](src/types) — frontend analysis contracts.
+- [src/hooks](src/hooks) — terminal log stream/typing behavior.
+- [server/src](server/src) — API routes, analyzer, AI integration, sandbox runner, shared types.
 - [public](public) — static assets served by Vite.
 
 Key back-end modules:
 
-- [server/src/index.ts](server/src/index.ts) — API routes and in-memory analysis cache.
+- [server/src/index.ts](server/src/index.ts) — Express bootstrap and route mounting.
+- [server/src/routes.ts](server/src/routes.ts) — REST endpoint implementation and in-memory analysis indexes.
+- [server/src/aiService.ts](server/src/aiService.ts) — OpenAI-powered enhancement and chat fallback orchestration.
 - [server/src/repoAnalyzer.ts](server/src/repoAnalyzer.ts) — clone repo, detect stack/entry points, build structure graphs, derive issues and stats, generate docs and learning aids.
 - [server/src/runRepo.ts](server/src/runRepo.ts) — install deps and start the analyzed repo on an ephemeral port based on stack hints.
 - [server/src/types.ts](server/src/types.ts) — shared type contracts for API payloads and analysis results.
