@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 type FeedLine = {
   id: string
@@ -33,5 +33,5 @@ export function useTerminalFeed() {
     }
   }
 
-  return useMemo(() => ({ lines, push, pushFlow, streamText }), [lines])
+  return { lines, push, pushFlow, streamText }
 }
