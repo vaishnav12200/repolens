@@ -1,47 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --bg: #050c18;
-  --bg-2: #0b1324;
-  --panel: #0e1627;
-  --line: #16233a;
-  --line-hover: #20324f;
-  --accent: #4da3ff; /* electric blue */
-  --accent-hover: #6ec2ff;
-  --accent-2: #6af0ff; /* cyan glow */
-  --text: #e8f1ff;
-  --muted: #9fb4d1;
-  --muted-soft: #c8d8ed;
-  --shadow-strong: #02060c;
-  --shadow-soft: rgba(0, 0, 0, 0.4);
-
-  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  color-scheme: dark;
+  font-family: Inter, 'Space Grotesk', system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    radial-gradient(circle at 25% 20%, rgba(77, 163, 255, 0.12), transparent 32%),
-    radial-gradient(circle at 80% 70%, rgba(106, 240, 255, 0.12), transparent 36%),
-    #050c18;
-  background-size: 18px 18px, 100% 100%, 100% 100%, auto;
-  color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    radial-gradient(circle at 12% 12%, rgba(44, 94, 245, 0.3), transparent 36%),
+    radial-gradient(circle at 86% 74%, rgba(104, 60, 205, 0.28), transparent 32%),
+    linear-gradient(150deg, #04060f 0%, #060b19 45%, #04060f 100%);
+  color: #e3ebff;
 }
 
-::selection {
-  background: rgba(77, 163, 255, 0.25);
-  color: #031018;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
+#root {
+  min-height: 100vh;
 }

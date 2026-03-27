@@ -1,117 +1,16 @@
-import { useMemo, useState } from 'react'
-import './App.css'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { useTerminalFeed } from './hooks/useTerminalFeed'
+import { api } from './services/api'
+import type { Analysis, Capability, ChatResponse, CompareResult, TestResult } from './types/repolens'
 
-type Analysis = {
-  id: string
-  repoUrl: string
-  analyzedAt: string
-  runIt: {
-    detectedStack: string[]
-    installCommand: string
-    startCommand: string
-    previewUrl: string
-    notes: string[]
-  }
-  explainIt: {
-    summary: string
-    stackBreakdown: Array<{ name: string; confidence: string; evidence: string }>
-    entryPoints: Array<{ path: string; line?: number }>
-    businessLogic: string[]
-  }
-  structure: {
-    folderTree: string[]
-    architecture: string[]
-    callGraph: Array<{ from: string; to: string }>
-    dependencyGraph: Array<{ module: string; dependsOn: string[] }>
-  }
-  issues: {
-    security: Array<{ title: string; file: string; severity: string }>
-    outdated: Array<{ packageName: string; current: string; severity: string }>
-    smells: Array<{ title: string; file: string }>
-    missingErrorHandling: Array<{ path: string }>
-    hardcodedSecrets: Array<{ path: string }>
-  }
-  stats: {
-    mostChangedFiles: Array<{ file: string; commits: number }>
-    busFactorByFolder: Array<{ folder: string; authors: number }>
-    codeAgeHeatmap: Array<{ file: string; lastUpdated: string }>
-    commitVelocity90d: number
-    testCoverageEstimate: number
-  }
-  testing: {
-    detectedTestCommands: string[]
-    testFiles: number
-    untestedCandidateFiles: string[]
-  }
-  docs: {
-    readme: string
-    apiOverview: string
-    onboarding: string
-  }
-  learning: {
-    tutorialSteps: string[]
-    importantFiles: Array<{ path: string; line?: number }>
-    glossary: Array<{ term: string; meaning: string }>
-  }
-}
+const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })))
+const WorkspacePage = lazy(() => import('./pages/WorkspacePage').then((module) => ({ default: module.WorkspacePage })))
 
-type CompareResult = {
-  left: {
-    repoUrl: string
-    stats: { testCoverageEstimate: number; commitVelocity90d: number }
-    issues: { security: Array<{ file: string }> }
-  }
-  right: {
-    repoUrl: string
-    stats: { testCoverageEstimate: number; commitVelocity90d: number }
-    issues: { security: Array<{ file: string }> }
-  }
-  recommendation: string
-}
-
-type TestResult = {
-  detectedCommands: string[]
-  testFiles: number
-  suggestedMissingTests: string[]
-  summary: string
-}
-
-type Screen = 'landing' | 'selector' | 'workspace'
-
-type Feature = {
-  id:
-    | 'run'
-    | 'explain'
-    | 'structure'
-    | 'chat'
-    | 'issues'
-    | 'stats'
-    | 'test'
-    | 'compare'
-    | 'docs'
-    | 'learn'
-  title: string
-  tag: string
-  description: string
-}
-
-const FEATURES: Feature[] = [
-  { id: 'run', title: 'Run It', tag: '01', description: 'Generate live sandbox commands and runtime preview info.' },
-  { id: 'explain', title: 'Explain It', tag: '02', description: 'Get plain-English summary, stack and entry point walkthrough.' },
-  { id: 'structure', title: 'Draw the Structure', tag: '03', description: 'See folder map, architecture notes, call/dependency graph slices.' },
-  { id: 'chat', title: 'Chat With The Repo', tag: '04', description: 'Ask targeted questions and get file-based references.' },
-  { id: 'issues', title: 'Find Issues', tag: '05', description: 'Surface security smells, hardcoded secrets and risky patterns.' },
-  { id: 'stats', title: 'Repo Stats Dashboard', tag: '06', description: 'Track commit velocity, hot files, coverage estimate and bus factor.' },
-  { id: 'test', title: 'Test It', tag: '07', description: 'Inspect detected tests and untested candidate areas instantly.' },
-  { id: 'compare', title: 'Compare Two Repos', tag: '08', description: 'Evaluate two repos side-by-side with quality/activity heuristics.' },
-  { id: 'docs', title: 'Generate Documentation', tag: '09', description: 'Auto-build README, API overview and onboarding guide.' },
-  { id: 'learn', title: 'Learning Mode', tag: '10', description: 'Get a junior-friendly guided tour and key-file learning path.' },
-]
+type Screen = 'landing' | 'workspace'
 
 function App() {
   const [screen, setScreen] = useState<Screen>('landing')
-  const [selectedFeature, setSelectedFeature] = useState<Feature | null>(FEATURES[0])
-  const [landingSelectedFeature, setLandingSelectedFeature] = useState<Feature['id'] | null>(FEATURES[0].id)
+  const [capability, setCapability] = useState<Capability>('explain')
 
   const [repoUrl, setRepoUrl] = useState('https://github.com/expressjs/express')
   const [repoUrlSecond, setRepoUrlSecond] = useState('https://github.com/fastify/fastify')
@@ -119,53 +18,108 @@ function App() {
 
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null)
-  const [chatAnswer, setChatAnswer] = useState('')
-  const [chatRefs, setChatRefs] = useState<Array<{ path: string; line?: number }>>([])
-  const [testResult, setTestResult] = useState<TestResult | null>(null)
-
+  const [chatResult, setChatResult] = useState<ChatResponse | null>(null)
+  const [testResult] = useState<TestResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [history, setHistory] = useState<string[]>([])
+  const terminal = useTerminalFeed()
+
+  useEffect(() => {
+    const raw = localStorage.getItem('repolens-history')
+    if (!raw) return
+
+    try {
+      setHistory(JSON.parse(raw) as string[])
+    } catch {
+      setHistory([])
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('repolens-history', JSON.stringify(history.slice(0, 12)))
+  }, [history])
 
   const docsBlob = useMemo(() => {
     if (!analysis) return '# Analyze a repository first'
     return `${analysis.docs.readme}\n\n${analysis.docs.apiOverview}\n\n${analysis.docs.onboarding}`
   }, [analysis])
 
-  function openFeatureWorkspace(feature: Feature) {
-    setSelectedFeature(feature)
-    setScreen('workspace')
-    setError('')
-    setChatAnswer('')
-    setChatRefs([])
-    setCompareResult(null)
-    setTestResult(null)
-    // Always clear old analysis to force re-fetch when starting fresh or new URL is given
-    if (analysis && analysis.repoUrl !== repoUrl) {
-      setAnalysis(null);
-    }
-  }
-
-  async function ensureAnalysis() {
+  const ensureAnalysis = async () => {
     if (analysis && analysis.repoUrl === repoUrl) {
       return analysis
     }
 
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repoUrl }),
-    })
-
-    const data = await response.json()
-    if (!response.ok) {
-      throw new Error(data.error ?? 'Analysis failed')
-    }
-
-    setAnalysis(data)
-    return data as Analysis
+    await terminal.pushFlow(['cloning repository...', 'analyzing stack and entry points...', 'building architecture maps...'])
+    const fresh = await api.analyze(repoUrl)
+    setAnalysis(fresh)
+    setHistory((prev) => [repoUrl, ...prev.filter((item) => item !== repoUrl)])
+    terminal.push('analysis completed successfully')
+    return fresh
   }
 
-  function downloadDocs() {
+  const runAction = async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      if (capability === 'compare') {
+        await terminal.pushFlow(['running side-by-side compare...', 'calculating quality heuristics...'])
+        const result = await api.compare(repoUrl, repoUrlSecond)
+        setCompareResult(result)
+        terminal.push('compare results ready')
+        return
+      }
+
+      if (capability === 'run') {
+        await terminal.pushFlow(['preparing sandbox runtime...', 'installing dependencies...', 'starting target app...'])
+        const runResult = await api.run(repoUrl)
+        setAnalysis(runResult)
+        terminal.push(`preview ready at ${runResult.runIt.previewUrl}`)
+        return
+      }
+
+      const fresh = await ensureAnalysis()
+
+      if (capability === 'chat') {
+        await terminal.pushFlow(['querying repository context...', 'generating ai response...'])
+        const response = await api.chat(fresh.id, question)
+        setChatResult(response)
+        await terminal.streamText(response.answer, '> answer: ')
+        return
+      }
+
+      if (capability === 'stats') {
+        terminal.push('rendering repo score and activity metrics...')
+      }
+
+      if (capability === 'issues') {
+        terminal.push('running security and smell inspection output...')
+      }
+
+      if (capability === 'structure') {
+        terminal.push('drawing folder tree and graph topology...')
+      }
+
+      if (capability === 'docs') {
+        terminal.push('docs bundle ready for download')
+      }
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : 'Unknown error'
+      setError(message)
+      terminal.push(`error: ${message}`)
+    } finally {
+      setLoading(false)
+      setScreen('workspace')
+    }
+  }
+
+  const handleAnalyze = async () => {
+    setCapability('explain')
+    await runAction()
+  }
+
+  const downloadDocs = () => {
     const blob = new Blob([docsBlob], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -173,646 +127,44 @@ function App() {
     link.download = 'repolens-generated-docs.md'
     link.click()
     URL.revokeObjectURL(url)
-  }
-
-  async function runSelectedFeature() {
-    if (!selectedFeature) return
-
-    setLoading(true)
-    setError('')
-
-    try {
-      if (selectedFeature.id === 'compare') {
-        const response = await fetch('/api/compare', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leftUrl: repoUrl, rightUrl: repoUrlSecond }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error ?? 'Compare failed')
-        }
-        setCompareResult(data)
-        return
-      }
-
-      if (selectedFeature.id === 'test') {
-        const response = await fetch('/api/test-run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoUrl }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error ?? 'Test inspection failed')
-        }
-        setTestResult(data)
-        return
-      }
-
-      
-      if (selectedFeature.id === 'run') {
-        const response = await fetch('/api/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoUrl }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error ?? 'Run execution failed')
-        }
-        setAnalysis(data)
-        return
-      }
-
-
-      const freshAnalysis = await ensureAnalysis()
-
-
-
-      if (selectedFeature.id === 'chat') {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ analysisId: freshAnalysis.id, question }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error ?? 'Chat request failed')
-        }
-        setChatAnswer(data.answer ?? '')
-        setChatRefs(data.references ?? [])
-      }
-
-      if (selectedFeature.id === 'docs') {
-        downloadDocs()
-      }
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unknown error')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function renderLanding() {
-    const topRowOrder: Array<Feature['id']> = ['run', 'explain', 'structure', 'chat', 'issues']
-    const bottomRowOrder: Array<Feature['id']> = ['stats', 'test', 'docs', 'compare']
-
-    const topRowFeatures = topRowOrder
-      .map((featureId) => FEATURES.find((feature) => feature.id === featureId))
-      .filter((feature): feature is Feature => Boolean(feature))
-
-    const bottomRowFeatures = bottomRowOrder
-      .map((featureId) => FEATURES.find((feature) => feature.id === featureId))
-      .filter((feature): feature is Feature => Boolean(feature))
-
-    function startFromLanding() {
-      if (landingSelectedFeature) {
-        const feature = FEATURES.find((item) => item.id === landingSelectedFeature)
-        if (feature) {
-          openFeatureWorkspace(feature)
-          return
-        }
-      }
-      setScreen('selector')
-    }
-
-    return (
-      <section className="landing cinematic">
-        <header className="hero-copy">
-          <p className="kicker">AI-native repo intelligence</p>
-          <h1>RepoLens</h1>
-          <h2>Clarity for every repository</h2>
-          <p className="subtitle">
-            Deep analysis, runnable playbooks and documentation in one workspace. Pick a capability and launch instantly.
-          </p>
-          <div className="hero-badges">
-            <span>Instant architecture maps</span>
-            <span>Security-aware insights</span>
-            <span>Docs and onboarding on tap</span>
-          </div>
-        </header>
-
-        <div className="feature-rows" role="list">
-          <div className="feature-row" role="listitem">
-            {topRowFeatures.map((feature) => (
-              <button
-                key={feature.id}
-                className={`plank-button ${landingSelectedFeature === feature.id ? 'active' : ''}`}
-                onClick={() => setLandingSelectedFeature(feature.id)}
-              >
-                {feature.id === 'run' && 'Run Repo'}
-                {feature.id === 'explain' && 'Explain Repo'}
-                {feature.id === 'structure' && 'Repo Structure'}
-                {feature.id === 'chat' && 'Chat with Repo'}
-                {feature.id === 'issues' && 'Find Issues'}
-              </button>
-            ))}
-          </div>
-
-          <div className="feature-row" role="listitem">
-            {bottomRowFeatures.map((feature) => (
-              <button
-                key={feature.id}
-                className={`plank-button ${landingSelectedFeature === feature.id ? 'active' : ''}`}
-                onClick={() => setLandingSelectedFeature(feature.id)}
-              >
-                {feature.id === 'stats' && 'Repo Stats'}
-                {feature.id === 'test' && 'Run Tests'}
-                {feature.id === 'docs' && 'Generate Docs'}
-                {feature.id === 'compare' && 'Compare Repos'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button className="cta hero-cta" onClick={startFromLanding}>
-          Open Workspace
-        </button>
-      </section>
-    )
-  }
-
-  function renderSelector() {
-    return (
-      <section>
-        <header className="section-header">
-          <h2>Choose One Feature</h2>
-          <p>Select the capability you want to run first.</p>
-        </header>
-
-        <div className="selector-grid">
-          {FEATURES.map((feature) => (
-            <article key={feature.id} className="feature-card">
-              <span>{feature.tag}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
-              <button onClick={() => openFeatureWorkspace(feature)}>Use Feature</button>
-            </article>
-          ))}
-        </div>
-
-        <button className="ghost" onClick={() => setScreen('landing')}>
-          Back to Landing
-        </button>
-      </section>
-    )
-  }
-
-  function renderFeatureResult() {
-    if (!selectedFeature) return null
-
-    if (selectedFeature.id === 'run' && analysis) {
-      return (
-        <div className="result-block">
-          <div className="list-group">
-            <h4>Environment Setup</h4>
-            <p>Detected Stack Config:</p>
-            <div className="tag-list" style={{ marginBottom: '1rem' }}>
-              {analysis.runIt.detectedStack.length ? (
-                analysis.runIt.detectedStack.map((stack, i) => <span key={i} className="tag-pill">{stack}</span>)
-              ) : (
-                <span className="tag-pill">Unknown Stack</span>
-              )}
-            </div>
-            
-            <p>Playbook to run locally:</p>
-            <div className="code-snippet">
-              $ {analysis.runIt.installCommand}
-              <br />
-              $ {analysis.runIt.startCommand}
-            </div>
-            <p>Preview Environment: <a href={analysis.runIt.previewUrl} target="_blank" rel="noreferrer" style={{color: 'var(--accent)', textDecoration:'underline'}}>{analysis.runIt.previewUrl}</a></p>
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'explain' && analysis) {
-      return (
-        <div className="result-block">
-          <div className="list-group">
-            <h4>Repository Explainer (README Mode)</h4>
-            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-              
-              {/* Introduction / What it does */}
-              <h2 style={{marginTop: 0, marginBottom: '0.5rem', borderBottom: '2px solid var(--accent)', paddingBottom: '0.5rem'}}>📖 Introduction to {analysis.repoUrl.split('/').pop()}</h2>
-              <p style={{ lineHeight: '1.8', color: 'var(--text)', fontSize: '1.1rem', marginBottom: '1.5rem' }}>
-                {analysis.explainIt.summary}
-              </p>
-
-              {/* Core Business Logic / What it handles */}
-              {analysis.explainIt.businessLogic.length > 0 && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>⚙️ What this project does</h3>
-                  <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>
-                    {analysis.explainIt.businessLogic.map((logic, i) => (
-                      <li key={i} style={{ marginBottom: '0.75rem', lineHeight: '1.6', fontSize: '1.05rem', color: 'var(--text)' }}>
-                        {logic}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Architecture & Flow */}
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🔄 Architecture & Flow</h3>
-                <div style={{ backgroundColor: 'var(--bg-dark, #1e1e1e)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                  <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
-                    {analysis.structure.architecture.map((line, idx) => (
-                      <li key={idx} style={{ marginBottom: '0.5rem', color: 'var(--text)', lineHeight: '1.5' }}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Technology Stack */}
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🛠️ Technology Stack</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
-                  {analysis.explainIt.stackBreakdown.map(stack => (
-                    <div key={stack.name} style={{ backgroundColor: 'var(--bg-base)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.25rem' }}>{stack.name}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{stack.evidence}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Starting Points & Next Steps */}
-              <div>
-                <h3 style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>🚀 What Next? (Onboarding Guide)</h3>
-                <div style={{ backgroundColor: 'var(--bg-base)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0' }}>Suggested Learning Path</h4>
-                  <ol style={{ paddingLeft: '1.5rem', margin: '0 0 1rem 0' }}>
-                    {analysis.learning.tutorialSteps?.map((step: string, i: number) => (
-                      <li key={i} style={{ marginBottom: '0.4rem', lineHeight: '1.5' }}>{step}</li>
-                    ))}
-                  </ol>
-
-                  <h4 style={{ margin: '0 0 0.5rem 0' }}>Key Entry Points to Inspect</h4>
-                  <div className="tag-list" style={{ marginTop: '0.5rem' }}>
-                    {analysis.explainIt.entryPoints.map((entry) => (
-                      <span key={entry.path} className="tag-pill" style={{fontFamily: 'monospace'}}>{entry.path}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'structure' && analysis) {
-      // Build a nested tree structure from flat paths
-      const tree: any = {};
-      analysis.structure.folderTree.forEach(path => {
-        const parts = path.split('/');
-        let current = tree;
-        parts.forEach((part, i) => {
-          if (!current[part]) {
-            current[part] = i === parts.length - 1 ? null : {};
-          }
-          current = current[part];
-        });
-      });
-
-      const renderTree = (node: any, prefix: string = '') => {
-        if (!node) return null;
-        const keys = Object.keys(node).sort((a, b) => {
-          const aIsDir = node[a] !== null;
-          const bIsDir = node[b] !== null;
-          if (aIsDir && !bIsDir) return -1;
-          if (!aIsDir && bIsDir) return 1;
-          return a.localeCompare(b);
-        });
-
-        return keys.map((key, index) => {
-          const isCurrentLast = index === keys.length - 1;
-          const isDir = node[key] !== null;
-          const marker = isCurrentLast ? '└── ' : '├── ';
-          const childPrefix = prefix + (isCurrentLast ? '    ' : '│   ');
-          
-          return (
-            <div key={prefix + key} style={{ whiteSpace: 'pre', fontFamily: 'monospace', color: 'var(--text)', lineHeight: '1.4' }}>
-              <span style={{color: 'var(--text-muted)'}}>{prefix}{marker}</span>
-              <span style={{color: isDir ? 'var(--accent)' : 'inherit', fontWeight: isDir ? 'bold' : 'normal'}}>
-                {isDir ? '📁 ' : '📄 '}{key}
-              </span>
-              {isDir && renderTree(node[key], childPrefix)}
-            </div>
-          );
-        });
-      };
-
-      return (
-        <div className="result-block">
-          <div className="dashboard-grid">
-            <div className="stat-card">
-              <h4>Total Files</h4>
-              <p className="stat-value">{analysis.structure.folderTree.length}</p>
-              <p className="stat-sub">Mapped in core tree</p>
-            </div>
-            <div className="stat-card">
-              <h4>Call Edges</h4>
-              <p className="stat-value">{analysis.structure.callGraph.length}</p>
-              <p className="stat-sub">Analyzed boundaries</p>
-            </div>
-            <div className="stat-card">
-              <h4>Dependency Nodes</h4>
-              <p className="stat-value">{analysis.structure.dependencyGraph.length}</p>
-              <p className="stat-sub">Linked modules</p>
-            </div>
-          </div>
-
-          <div className="list-group" style={{ marginTop: '1.5rem' }}>
-            <h4>Project Structure Tree</h4>
-            <div style={{ backgroundColor: 'var(--bg-lighter)', padding: '1rem', borderRadius: '8px', overflowX: 'auto', border: '1px solid var(--border)', marginTop: '0.75rem' }}>
-              <div style={{ fontFamily: 'monospace', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent)' }}>📦 {analysis.repoUrl.split('/').pop()}</div>
-              {renderTree(tree)}
-            </div>
-          </div>
-
-          <div className="list-group" style={{ marginTop: '1.5rem' }}>
-            <h4>Architecture Overview</h4>
-            <ul style={{ paddingLeft: '1.2rem', marginTop: '0.75rem' }}>
-              {analysis.structure.architecture.map((line, idx) => (
-                <li key={idx} style={{ marginBottom: '0.4rem', color: 'var(--text)' }}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'chat') {
-      return (
-        <div className="result-block">
-          <div className="list-group">
-            <h4>AI Response</h4>
-            {chatAnswer ? <p style={{ color: 'var(--text)' }}>{chatAnswer}</p> : <p>Ask a question and run this feature to get an answer.</p>}
-          </div>
-          
-          {chatRefs.length > 0 && (
-            <div className="list-group">
-              <h4>References</h4>
-              <div className="tag-list">
-                {chatRefs.map((ref, idx) => (
-                  <span key={idx} className="tag-pill">{ref.path}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'issues' && analysis) {
-      const allIssues = [
-        ...analysis.issues.security.map(i => ({...i, type: 'Security', severity: i.severity as 'high' | 'medium'})),
-        ...analysis.issues.hardcodedSecrets.map(i => ({ title: 'Hardcoded Secret risk detected', file: i.path, severity: 'high' as const, type: 'Secret' })),
-        ...analysis.issues.smells.map(i => ({...i, severity: 'medium' as const, type: 'Code Smell' }))
-      ];
-      
-      return (
-        <div className="result-block">
-          <div className="dashboard-grid" style={{ marginBottom: '0.5rem' }}>
-            <div className="stat-card">
-              <h4>Security Risk</h4>
-              <p className="stat-value" style={{ color: analysis.issues.security.length ? '#ef4444' : 'var(--text)' }}>{analysis.issues.security.length}</p>
-            </div>
-            <div className="stat-card">
-              <h4>Secrets</h4>
-              <p className="stat-value">{analysis.issues.hardcodedSecrets.length}</p>
-            </div>
-            <div className="stat-card">
-              <h4>Smells</h4>
-              <p className="stat-value" style={{ color: analysis.issues.smells.length ? '#eab308' : 'var(--text)' }}>{analysis.issues.smells.length}</p>
-            </div>
-          </div>
-          
-          <div className="list-group">
-            <h4>Discovered Issues File Traces</h4>
-            {allIssues.length > 0 ? (
-              <ul className="issue-list">
-                {allIssues.map((issue, idx) => (
-                  <li key={idx} className="issue-item">
-                    <span className={issue.severity === 'high' ? 'issue-severity-high' : 'issue-severity-medium'}>{issue.severity}</span>
-                    <div>
-                      <div className="issue-title">[{issue.type}] {issue.title}</div>
-                      <div className="issue-file">{issue.file}</div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No major issues found in sample phase.</p>
-            )}
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'stats' && analysis) {
-      return (
-        <div className="result-block">
-          <div className="dashboard-grid">
-            <div className="stat-card">
-              <h4>Commit Velocity</h4>
-              <p className="stat-value">{analysis.stats.commitVelocity90d}</p>
-              <p className="stat-sub">Commits in last 90 days</p>
-            </div>
-            <div className="stat-card">
-              <h4>Test Coverage</h4>
-              <p className="stat-value">{analysis.stats.testCoverageEstimate}%</p>
-              <p className="stat-sub">Estimated surface ratio</p>
-            </div>
-          </div>
-
-          <div className="list-group">
-            <h4>Most Active Source Files</h4>
-            <ul className="issue-list">
-              {analysis.stats.mostChangedFiles.slice(0, 6).map((item) => (
-                <li key={item.file} className="issue-item" style={{ alignItems: 'center' }}>
-                  <span className="tag-pill" style={{ minWidth: '40px', textAlign: 'center' }}>{item.commits}x</span>
-                  <span className="issue-file" style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{item.file}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'test') {
-      return (
-        <div className="result-block">
-          {testResult ? (
-            <>
-              <div className="dashboard-grid">
-                <div className="stat-card">
-                  <h4>Test Files</h4>
-                  <p className="stat-value">{testResult.testFiles}</p>
-                  <p className="stat-sub">Detected specs/tests</p>
-                </div>
-                <div className="stat-card" style={{ gridColumn: 'span 2' }}>
-                  <h4>Summary</h4>
-                  <p style={{ margin: 0, marginTop: '0.5rem', color: 'var(--text)' }}>{testResult.summary}</p>
-                </div>
-              </div>
-              <div className="list-group">
-                <h4>Detected Commands</h4>
-                <div className="code-snippet">
-                  {testResult.detectedCommands.map(c => <div key={c}>$ {c}</div>)}
-                </div>
-              </div>
-            </>
-          ) : (
-            <p>Run this feature to inspect test coverage and test gaps.</p>
-          )}
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'compare') {
-      return (
-        <div className="result-block">
-          {compareResult ? (
-            <>
-              <div className="list-group">
-                <h4>Side-by-side Recommendation</h4>
-                <p style={{ color: 'var(--text)', fontSize: '1.05rem' }}>{compareResult.recommendation}</p>
-              </div>
-              
-              <div className="dashboard-grid" style={{ marginTop: '2rem' }}>
-                <div className="stat-card">
-                  <h4 style={{ color: 'var(--accent)'}}>Left Repo</h4>
-                  <p className="stat-value">{compareResult.left.stats.testCoverageEstimate}%</p>
-                  <p className="stat-sub">Est. Coverage</p>
-                  <p className="stat-value" style={{ marginTop: '1rem', fontSize: '1.5rem'}}>{compareResult.left.stats.commitVelocity90d}</p>
-                  <p className="stat-sub">90d commit velocity</p>
-                </div>
-                <div className="stat-card">
-                  <h4 style={{ color: '#ef4444'}}>Right Repo</h4>
-                  <p className="stat-value">{compareResult.right.stats.testCoverageEstimate}%</p>
-                  <p className="stat-sub">Est. Coverage</p>
-                  <p className="stat-value" style={{ marginTop: '1rem', fontSize: '1.5rem'}}>{compareResult.right.stats.commitVelocity90d}</p>
-                  <p className="stat-sub">90d commit velocity</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <p>Run compare to see side-by-side recommendation.</p>
-          )}
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'docs' && analysis) {
-      return (
-        <div className="result-block">
-          <div className="list-group">
-            <h4>Documentation Export</h4>
-            <p>Full Markdown export is automatically generated and downloading to your local machine.</p>
-            <div className="code-snippet" style={{ whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
-              {analysis.docs.readme.split('\n').slice(0, 5).join('\n')}...
-            </div>
-            <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Preview mapped from analysis generator</p>
-          </div>
-        </div>
-      )
-    }
-
-    if (selectedFeature.id === 'learn' && analysis) {
-      return (
-        <div className="result-block">
-          <div className="list-group">
-            <h4>Recommended Tutorial Pathway</h4>
-            <ul className="issue-list">
-              {analysis.learning.tutorialSteps.map((step, idx) => (
-                <li key={idx} className="issue-item" style={{ alignItems: 'center' }}>
-                  <span className="tag-pill" style={{ background: 'var(--accent)', color: 'black', fontWeight: 'bold' }}>{idx + 1}</span>
-                  <span style={{ color: 'var(--text)' }}>{step}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="list-group">
-            <h4>Must-read Files</h4>
-            <div className="tag-list">
-              {analysis.learning.importantFiles.slice(0, 5).map((f) => (
-                <span key={f.path} className="tag-pill">{f.path}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return <div className="result-block">Run the selected feature to view results.</div>
-  }
-
-  function renderWorkspace() {
-    if (!selectedFeature) return null
-
-    return (
-      <section>
-        <header className="section-header">
-          <p className="kicker">Feature Workspace</p>
-          <h2>{selectedFeature.title}</h2>
-          <p>{selectedFeature.description}</p>
-        </header>
-
-        <div className="workspace-card">
-          <label>Repository URL</label>
-          <input value={repoUrl} onChange={(event) => {
-            setRepoUrl(event.target.value)
-            setAnalysis(null)
-          }} />
-
-          {selectedFeature.id === 'compare' && (
-            <>
-              <label>Second Repository URL</label>
-              <input value={repoUrlSecond} onChange={(event) => setRepoUrlSecond(event.target.value)} />
-            </>
-          )}
-
-          {selectedFeature.id === 'chat' && (
-            <>
-              <label>Question</label>
-              <input value={question} onChange={(event) => setQuestion(event.target.value)} />
-            </>
-          )}
-
-          <button className="cta" onClick={runSelectedFeature} disabled={loading}>
-            {loading ? 'Running...' : (analysis && selectedFeature.id !== 'compare' && selectedFeature.id !== 'test' && selectedFeature.id !== 'chat' && analysis.repoUrl === repoUrl) ? `View ${selectedFeature.title}` : `Run ${selectedFeature.title}`}
-          </button>
-          {error && <p className="error">{error}</p>}
-        </div>
-
-        {renderFeatureResult()}
-
-        <div className="workspace-actions">
-          <button className="ghost" onClick={() => setScreen('selector')}>
-            Back to Features
-          </button>
-          <button className="ghost" onClick={() => setScreen('landing')}>
-            Back to Landing
-          </button>
-        </div>
-      </section>
-    )
+    terminal.push('downloaded generated docs file')
   }
 
   return (
-    <main className="app-shell">
-      {screen === 'landing' && renderLanding()}
-      {screen === 'selector' && renderSelector()}
-      {screen === 'workspace' && renderWorkspace()}
-    </main>
+    <div className="mx-auto min-h-screen max-w-[1500px] px-4 py-6 md:px-6">
+      <Suspense fallback={<div className="rounded-xl border border-slate-800 bg-slate-950/70 p-6 text-slate-300">Loading RepoLens...</div>}>
+        {screen === 'landing' ? (
+          <LandingPage
+            repoUrl={repoUrl}
+            onRepoUrlChange={setRepoUrl}
+            onAnalyze={handleAnalyze}
+            loading={loading}
+          />
+        ) : (
+          <WorkspacePage
+            capability={capability}
+            onCapabilityChange={setCapability}
+            repoUrl={repoUrl}
+            repoUrlSecond={repoUrlSecond}
+            question={question}
+            onRepoUrlChange={setRepoUrl}
+            onRepoUrlSecondChange={setRepoUrlSecond}
+            onQuestionChange={setQuestion}
+            onRunAction={runAction}
+            onBack={() => setScreen('landing')}
+            onDownloadDocs={downloadDocs}
+            loading={loading}
+            error={error}
+            analysis={analysis}
+            compareResult={compareResult}
+            testResult={testResult}
+            chatResult={chatResult}
+            terminalLines={terminal.lines}
+            history={history}
+          />
+        )}
+      </Suspense>
+    </div>
   )
 }
 

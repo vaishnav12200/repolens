@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-markdown'
 import 'prismjs/themes/prism-tomorrow.css'
@@ -14,7 +14,7 @@ type Props = {
   chatResult: ChatResponse | null
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
       <h3 className="mb-3 text-sm uppercase tracking-[0.2em] text-neon-500">{title}</h3>
