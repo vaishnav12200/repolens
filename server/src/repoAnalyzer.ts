@@ -216,7 +216,7 @@ function buildCallGraph(sampleContents: Array<{ file: string; content: string }>
   return edges.slice(0, 200)
 }
 
-function findIssues(sampleContents: Array<{ file: string; content: string }>, files: string[]) {
+function findIssues(sampleContents: Array<{ file: string; content: string }>) {
   const security: RepoAnalysis['issues']['security'] = []
   const smells: RepoAnalysis['issues']['smells'] = []
   const missingErrorHandling: FileRef[] = []
@@ -387,7 +387,7 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
   const logic = summarizeBusinessLogic(sampleContents)
   const packageJsonPath = files.find((f) => f === 'package.json')
   const packageJson = packageJsonPath ? await readPackageJson(dir, packageJsonPath) : null
-  const issues = findIssues(sampleContents, files)
+  const issues = findIssues(sampleContents)
   const outdated = findPotentiallyOutdatedDependencies(packageJson)
   issues.outdated = outdated.length > 0 ? outdated : issues.outdated
   const [mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap] = await Promise.all([
