@@ -49,6 +49,7 @@ export type RepoAnalysis = {
     codeAgeHeatmap: Array<{ file: string; lastUpdated: string }>
     commitVelocity90d: number
     testCoverageEstimate: number
+    repoScore: number
   }
   testing: {
     detectedTestCommands: string[]
