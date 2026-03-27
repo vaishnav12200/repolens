@@ -91,6 +91,22 @@ async function readSampleContents(root: string, files: string[]) {
   return content
 }
 
+async function readPackageJson(root: string, files: string) {
+  try {
+    if (files !== 'package.json') {
+      return null
+    }
+
+    const raw = await readFile(join(root, files), 'utf-8')
+    return JSON.parse(raw) as {
+      dependencies?: Record<string, string>
+      devDependencies?: Record<string, string>
+    }
+  } catch {
+    return null
+  }
+}
+
 function detectStack(files: string[]): StackItem[] {
   const joined = new Set(files)
   const stack: StackItem[] = []
@@ -222,10 +238,7 @@ function findIssues(sampleContents: Array<{ file: string; content: string }>, fi
     }
   }
 
-  const packageJson = files.find((f) => f.endsWith('package.json'))
-  const outdated: RepoAnalysis['issues']['outdated'] = packageJson
-    ? [{ packageName: 'NPM dependency audit pending', current: 'unknown', severity: 'medium' }]
-    : []
+  const outdated: RepoAnalysis['issues']['outdated'] = []
 
   return {
     security: security.slice(0, 20),
@@ -234,6 +247,28 @@ function findIssues(sampleContents: Array<{ file: string; content: string }>, fi
     missingErrorHandling: missingErrorHandling.slice(0, 20),
     hardcodedSecrets: hardcodedSecrets.slice(0, 20),
   }
+}
+
+function findPotentiallyOutdatedDependencies(
+  packageJson: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> } | null,
+): RepoAnalysis['issues']['outdated'] {
+  if (!packageJson) {
+    return []
+  }
+
+  const mergedDeps = {
+    ...(packageJson.dependencies ?? {}),
+    ...(packageJson.devDependencies ?? {}),
+  }
+
+  return Object.entries(mergedDeps)
+    .filter(([, version]) => /^0\./.test(version.replace(/^[~^]/, '')) || /^\d+\.\d+\.\d+$/.test(version))
+    .slice(0, 20)
+    .map(([packageName, current]) => ({
+      packageName,
+      current,
+      severity: /^0\./.test(current.replace(/^[~^]/, '')) ? 'medium' : 'low',
+    }))
 }
 
 async function getMostChangedFiles(repoDir: string) {
@@ -297,6 +332,22 @@ function estimateCoverage(files: string[]) {
   }
 }
 
+function calculateRepoScore(input: {
+  coverage: number
+  velocity: number
+  securityFindings: number
+  smellFindings: number
+  stackSignals: number
+}) {
+  const velocityScore = Math.min(30, input.velocity)
+  const coverageScore = Math.min(40, input.coverage)
+  const stackScore = Math.min(20, input.stackSignals * 4)
+  const riskPenalty = Math.min(50, input.securityFindings * 8 + input.smellFindings * 2)
+  const raw = coverageScore + velocityScore + stackScore - riskPenalty + 10
+
+  return Math.max(0, Math.min(10, Number((raw / 10).toFixed(1))))
+}
+
 function generateDocs(repoUrl: string, stack: StackItem[], entryPoints: FileRef[], logic: string[]) {
   const readme = `# RepoLens Generated README\n\n## Source\n${repoUrl}\n\n## What this project does\n${logic.map((l) => `- ${l}`).join('\n')}\n\n## Quick Start\n- Install dependencies\n- Run the app\n- Inspect entry points below\n\n## Entry Points\n${entryPoints.map((e) => `- ${e.path}`).join('\n')}`
 
@@ -334,7 +385,11 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
   const stack = detectStack(files)
   const entryPoints = detectEntryPoints(files)
   const logic = summarizeBusinessLogic(sampleContents)
+  const packageJsonPath = files.find((f) => f === 'package.json')
+  const packageJson = packageJsonPath ? await readPackageJson(dir, packageJsonPath) : null
   const issues = findIssues(sampleContents, files)
+  const outdated = findPotentiallyOutdatedDependencies(packageJson)
+  issues.outdated = outdated.length > 0 ? outdated : issues.outdated
   const [mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap] = await Promise.all([
     getMostChangedFiles(dir),
     getCommitVelocity(dir),
@@ -343,6 +398,13 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
   ])
 
   const testing = estimateCoverage(files)
+  const repoScore = calculateRepoScore({
+    coverage: testing.coverage,
+    velocity: commitVelocity90d,
+    securityFindings: issues.security.length,
+    smellFindings: issues.smells.length,
+    stackSignals: stack.length,
+  })
   const docs = generateDocs(repoUrl, stack, entryPoints, logic)
   const glossary = buildGlossary(sampleContents)
   const learning = {
@@ -373,7 +435,14 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
     explainIt: { summary: `Analyzed ${files.length} files. ${logic[0] ?? ''}`, stackBreakdown: stack, entryPoints, businessLogic: logic },
     structure: { folderTree: buildFolderTree(files), architecture: buildArchitecture(files), callGraph: buildCallGraph(sampleContents), dependencyGraph: buildDependencyGraph(sampleContents) },
     issues,
-    stats: { mostChangedFiles, commitVelocity90d, busFactorByFolder, codeAgeHeatmap, testCoverageEstimate: testing.coverage },
+    stats: {
+      mostChangedFiles,
+      commitVelocity90d,
+      busFactorByFolder,
+      codeAgeHeatmap,
+      testCoverageEstimate: testing.coverage,
+      repoScore,
+    },
     testing: { detectedTestCommands: ['npm test'], testFiles: testing.testFiles, untestedCandidateFiles: testing.untested },
     chatIndex: { hotspots: [], glossary: [] },
     docs,
