@@ -78,3 +78,39 @@ export type CompareResult = {
   right: Pick<RepoAnalysis, 'repoUrl' | 'runIt' | 'explainIt' | 'stats' | 'issues'>
   recommendation: string
 }
+
+export type CommandRequest = {
+  command: string
+}
+
+export type CommandResponse = {
+  command: string
+  capability: 'analyze' | 'structure' | 'issues' | 'stats' | 'run' | 'chat' | 'docs' | 'compare' | 'help'
+  logs: string[]
+  result?: {
+    analysis?: RepoAnalysis
+    compare?: CompareResult
+    chat?: {
+      answer: string
+      references: Array<{ path: string; line?: number }>
+      aiUsed?: boolean
+    }
+    docs?: RepoAnalysis['docs']
+    run?: {
+      url: string
+      port: number
+      command: string
+      pid?: number
+    }
+  }
+}
+
+export type RuntimeSession = {
+  repoDir: string
+  repoUrl?: string
+  pid?: number
+  port: number
+  url: string
+  command: string
+  startedAt: string
+}
