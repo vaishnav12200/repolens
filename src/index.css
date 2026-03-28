@@ -122,6 +122,20 @@ body {
   white-space: pre-wrap;
 }
 
+.terminal-link,
+.preview-link {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 229, 255, 0.6);
+  text-underline-offset: 2px;
+}
+
+.terminal-link:hover,
+.preview-link:hover {
+  color: #86f4ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+}
+
 .landing-screen {
   min-height: calc(100vh - 32px);
   display: grid;

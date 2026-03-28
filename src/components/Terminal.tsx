@@ -9,6 +9,29 @@ type Props = {
   className?: string
 }
 
+function renderLineWithLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const segments = text.split(urlRegex)
+
+  return segments.map((segment, index) => {
+    if (/^https?:\/\//.test(segment)) {
+      return (
+        <a
+          key={`${segment}-${index}`}
+          href={segment}
+          target="_blank"
+          rel="noreferrer"
+          className="terminal-link"
+        >
+          {segment}
+        </a>
+      )
+    }
+
+    return <span key={`${segment}-${index}`}>{segment}</span>
+  })
+}
+
 export function Terminal({ title = 'terminal', lines, className }: Props) {
   return (
     <section className={`terminal-shell ${className ?? ''}`.trim()}>
@@ -23,7 +46,7 @@ export function Terminal({ title = 'terminal', lines, className }: Props) {
       <div className="terminal-body">
         {lines.map((line) => (
           <p key={line.id} className="terminal-line glow-text">
-            {line.text}
+            {renderLineWithLinks(line.text)}
           </p>
         ))}
       </div>

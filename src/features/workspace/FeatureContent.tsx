@@ -129,7 +129,12 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
       <Card title="Sandbox Runner">
         <p className="text-sm text-cyan-300">Install: <span className="font-mono">{analysis.runIt.installCommand}</span></p>
         <p className="text-sm text-cyan-300">Start: <span className="font-mono">{analysis.runIt.startCommand}</span></p>
-        <p className="mt-3 text-sm text-neon-500">Preview URL: {analysis.runIt.previewUrl}</p>
+        <p className="mt-3 text-sm text-neon-500">
+          Preview URL:{' '}
+          <a href={analysis.runIt.previewUrl} target="_blank" rel="noreferrer" className="preview-link">
+            {analysis.runIt.previewUrl}
+          </a>
+        </p>
       </Card>
     )
   }
