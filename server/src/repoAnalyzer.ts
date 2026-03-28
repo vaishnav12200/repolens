@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, extname, join, relative } from 'node:path'
+import { basename, dirname, extname, join, relative } from 'node:path'
 import { promisify } from 'node:util'
 import crypto from 'node:crypto'
 import type { CompareResult, FileRef, RepoAnalysis, StackItem } from './types.js'
@@ -101,6 +101,7 @@ async function readPackageJson(root: string, files: string) {
     return JSON.parse(raw) as {
       dependencies?: Record<string, string>
       devDependencies?: Record<string, string>
+      scripts?: Record<string, string>
     }
   } catch {
     return null
@@ -157,7 +158,29 @@ function summarizeBusinessLogic(sampleContents: Array<{ file: string; content: s
 }
 
 function buildFolderTree(files: string[]): string[] {
-  return files.slice(0, 200)
+  const allDirs = new Set<string>()
+
+  for (const file of files.slice(0, 400)) {
+    const folder = dirname(file)
+    if (folder !== '.') {
+      const parts = folder.split('/')
+      for (let index = 0; index < parts.length; index += 1) {
+        allDirs.add(parts.slice(0, index + 1).join('/'))
+      }
+    }
+  }
+
+  const allNodes = [...allDirs, ...files.slice(0, 400)].sort((left, right) => left.localeCompare(right))
+  const lines: string[] = []
+
+  for (const node of allNodes) {
+    const depth = node.split('/').length - 1
+    const name = node.split('/').at(-1) ?? node
+    const indent = depth === 0 ? '' : `${'│   '.repeat(Math.max(0, depth - 1))}├── `
+    lines.push(`${indent}${name}`)
+  }
+
+  return lines.slice(0, 260)
 }
 
 function buildArchitecture(files: string[]): string[] {
@@ -216,6 +239,16 @@ function buildCallGraph(sampleContents: Array<{ file: string; content: string }>
   return edges.slice(0, 200)
 }
 
+function findLineForPattern(content: string, pattern: RegExp) {
+  const lines = content.split('\n')
+  for (let index = 0; index < lines.length; index += 1) {
+    if (pattern.test(lines[index])) {
+      return index + 1
+    }
+  }
+  return undefined
+}
+
 function findIssues(sampleContents: Array<{ file: string; content: string }>) {
   const security: RepoAnalysis['issues']['security'] = []
   const smells: RepoAnalysis['issues']['smells'] = []
@@ -230,10 +263,10 @@ function findIssues(sampleContents: Array<{ file: string; content: string }>) {
       smells.push({ title: 'Contains TODO/FIXME markers', file })
     }
     if (/await\s+\w+\([^)]*\);/.test(content) && !/try\s*\{/.test(content)) {
-      missingErrorHandling.push({ path: file })
+      missingErrorHandling.push({ path: file, line: findLineForPattern(content, /await\s+\w+\([^)]*\);/) })
     }
     if (/api[_-]?key\s*=\s*['"][A-Za-z0-9_-]{16,}['"]|secret\s*=\s*['"][A-Za-z0-9_-]{10,}['"]/i.test(content)) {
-      hardcodedSecrets.push({ path: file })
+      hardcodedSecrets.push({ path: file, line: findLineForPattern(content, /api[_-]?key\s*=\s*['"][A-Za-z0-9_-]{16,}['"]|secret\s*=\s*['"][A-Za-z0-9_-]{10,}['"]/i) })
       security.push({ title: 'Potential hardcoded secret', file, severity: 'high' })
     }
   }
@@ -332,6 +365,74 @@ function estimateCoverage(files: string[]) {
   }
 }
 
+function detectTestCommands(
+  packageJson: { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> } | null,
+  files: string[],
+) {
+  const commands = new Set<string>()
+
+  if (packageJson?.scripts?.test) {
+    commands.add('npm test')
+  }
+
+  if (files.some((file) => /(^|\/)tests?\//.test(file) && file.endsWith('.py'))) {
+    commands.add('pytest')
+  }
+
+  if (files.some((file) => file.endsWith('_test.go') || file.endsWith('.test.go'))) {
+    commands.add('go test ./...')
+  }
+
+  if (files.some((file) => file.endsWith('.rs'))) {
+    commands.add('cargo test')
+  }
+
+  if (commands.size === 0) {
+    commands.add('npm test')
+  }
+
+  return [...commands]
+}
+
+function inferRuntimeCommands(
+  stack: StackItem[],
+  packageJson: { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> } | null,
+  files: string[],
+) {
+  if (stack.some((item) => item.name === 'Python')) {
+    return {
+      installCommand: 'python -m pip install -r requirements.txt || pip install -r requirements.txt',
+      startCommand: files.includes('main.py') ? 'python main.py' : files.includes('app.py') ? 'python app.py' : 'python -m http.server 8000',
+    }
+  }
+
+  if (packageJson?.scripts?.dev) {
+    return {
+      installCommand: 'npm install',
+      startCommand: 'npm run dev',
+    }
+  }
+
+  if (packageJson?.scripts?.start) {
+    return {
+      installCommand: 'npm install',
+      startCommand: 'npm start',
+    }
+  }
+
+  if (stack.some((item) => item.name === 'Vite')) {
+    return {
+      installCommand: 'npm install',
+      startCommand: 'npm run dev',
+    }
+  }
+
+  return {
+    installCommand: 'npm install',
+    startCommand: 'npm start',
+  }
+}
+
 function calculateRepoScore(input: {
   coverage: number
   velocity: number
@@ -387,6 +488,7 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
   const logic = summarizeBusinessLogic(sampleContents)
   const packageJsonPath = files.find((f) => f === 'package.json')
   const packageJson = packageJsonPath ? await readPackageJson(dir, packageJsonPath) : null
+  const runtime = inferRuntimeCommands(stack, packageJson, files)
   const issues = findIssues(sampleContents)
   const outdated = findPotentiallyOutdatedDependencies(packageJson)
   issues.outdated = outdated.length > 0 ? outdated : issues.outdated
@@ -407,6 +509,8 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
   })
   const docs = generateDocs(repoUrl, stack, entryPoints, logic)
   const glossary = buildGlossary(sampleContents)
+  const hotspots = [...issues.hardcodedSecrets, ...issues.missingErrorHandling].slice(0, 15)
+  const detectedTestCommands = detectTestCommands(packageJson, files)
   const learning = {
     tutorialSteps: [
       'Start with the top-level README and package metadata.',
@@ -427,10 +531,13 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
     analyzedAt: new Date().toISOString(),
     runIt: {
       detectedStack: stack.map((s) => s.name),
-      installCommand: stack.some((s) => s.name === 'Python') ? 'pip install -r requirements.txt' : 'npm install',
-      startCommand: stack.some((s) => s.name === 'Python') ? 'python app.py' : stack.some((s) => s.name === 'Vite') ? 'npm run dev' : 'npm start',
+      installCommand: runtime.installCommand,
+      startCommand: runtime.startCommand,
       previewUrl: 'Will trigger when actual Run hit...',
-      notes: [],
+      notes: [
+        'Sandbox run executes cloned code locally. Run only trusted repositories.',
+        'Preview URL is assigned dynamically when the run command is executed.',
+      ],
     },
     explainIt: { summary: `Analyzed ${files.length} files. ${logic[0] ?? ''}`, stackBreakdown: stack, entryPoints, businessLogic: logic },
     structure: { folderTree: buildFolderTree(files), architecture: buildArchitecture(files), callGraph: buildCallGraph(sampleContents), dependencyGraph: buildDependencyGraph(sampleContents) },
@@ -443,8 +550,8 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
       testCoverageEstimate: testing.coverage,
       repoScore,
     },
-    testing: { detectedTestCommands: ['npm test'], testFiles: testing.testFiles, untestedCandidateFiles: testing.untested },
-    chatIndex: { hotspots: [], glossary: [] },
+    testing: { detectedTestCommands, testFiles: testing.testFiles, untestedCandidateFiles: testing.untested },
+    chatIndex: { hotspots, glossary },
     docs,
     learning,
   }
