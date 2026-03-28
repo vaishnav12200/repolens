@@ -35,7 +35,7 @@ export function LandingPage({ repoUrl, onAnalyze, loading, terminalLines }: Prop
   }, [bootLines])
 
   const lines = useMemo(() => {
-    const base = bootLines.map((line) => ({ id: `${line}-${Math.random()}`, text: `> ${line}` }))
+    const base = bootLines.map((line, index) => ({ id: `boot-${index}`, text: `> ${line}` }))
     if (bootLines.length >= bootScript.length) {
       base.push({ id: 'prompt', text: '> Enter repository URL:' })
       base.push({ id: 'hint', text: '> Press Enter to boot workspace.' })

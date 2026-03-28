@@ -7,7 +7,7 @@ type FeedLine = {
 
 export function useTerminalFeed() {
   const [lines, setLines] = useState<FeedLine[]>([
-    { id: crypto.randomUUID(), text: '> repo ready. paste a github url to begin.' },
+    { id: crypto.randomUUID(), text: '> RepoLens shell online. Type help to list commands.' },
   ])
 
   const push = (text: string) => {
@@ -33,5 +33,17 @@ export function useTerminalFeed() {
     }
   }
 
-  return { lines, push, pushFlow, streamText }
+  const pushCommand = async (command: string, delay = 14) => {
+    const id = crypto.randomUUID()
+    setLines((prev) => [...prev.slice(-80), { id, text: '$ ' }])
+
+    let working = ''
+    for (const char of command) {
+      working += char
+      setLines((prev) => prev.map((line) => (line.id === id ? { ...line, text: `$ ${working}` } : line)).slice(-80))
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+
+  return { lines, push, pushFlow, streamText, pushCommand }
 }

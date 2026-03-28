@@ -89,11 +89,11 @@ export type TestResult = {
   summary: string
 }
 
-export const CAPABILITIES = ['explain', 'structure', 'issues', 'stats', 'run', 'chat', 'docs', 'compare'] as const
+export const CAPABILITIES = ['analyze', 'structure', 'issues', 'stats', 'run', 'chat', 'docs', 'compare'] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
 export const CAPABILITY_LABELS: Record<Capability, string> = {
-  explain: 'Explain',
+  analyze: 'Analyze',
   structure: 'Structure',
   issues: 'Issues',
   stats: 'Stats',

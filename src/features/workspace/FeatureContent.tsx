@@ -58,7 +58,7 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
     return <Card title="Waiting">Analyze a repository to unlock feature results.</Card>
   }
 
-  if (capability === 'explain') {
+  if (capability === 'analyze') {
     return (
       <Card title="AI Explain">
         <p className="text-sm text-slate-200">{analysis.explainIt.summary}</p>
