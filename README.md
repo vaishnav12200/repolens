@@ -70,6 +70,9 @@ Base URL: `http://localhost:8787`
 | `/api/chat` | POST | `{ analysisId: string, question: string }` | Answers questions against an existing analysis. |
 | `/api/compare` | POST | `{ leftUrl: string, rightUrl: string }` | Analyzes both repos and returns heuristic comparison. |
 | `/api/test-run` | POST | `{ repoUrl: string }` | Returns detected test commands, test file counts, and suggested untested files. |
+| `/api/command` | POST | `{ command: string, repoUrl?: string, leftUrl?: string, rightUrl?: string, analysisId?: string }` | Parses terminal command syntax and returns logs + structured result payload. |
+| `/api/runtime/sessions` | GET | — | Lists currently running sandbox sessions. |
+| `/api/runtime/stop` | POST | `{ repoUrl: string }` | Stops the sandbox session associated with analyzed repo. |
 
 ### Response sketch (analyze)
 
