@@ -16,8 +16,8 @@ type Props = {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-      <h3 className="mb-3 text-sm uppercase tracking-[0.2em] text-neon-500">{title}</h3>
+    <section className="rounded-md border border-neon-500/40 bg-black/80 p-4">
+      <h3 className="mb-3 text-sm uppercase tracking-[0.2em] text-neon-600">{title}</h3>
       {children}
     </section>
   )
@@ -36,19 +36,19 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
     return (
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Left Repository">
-          <p className="text-xs text-slate-200">{compareResult.left.repoUrl}</p>
-          <p className="mt-2 text-sm text-slate-300">Repo Score: {compareResult.left.stats.repoScore}</p>
-          <p className="text-sm text-slate-300">Velocity (90d): {compareResult.left.stats.commitVelocity90d}</p>
-          <p className="text-sm text-slate-300">Security flags: {compareResult.left.issues.security.length}</p>
+          <p className="text-xs text-neon-500">{compareResult.left.repoUrl}</p>
+          <p className="mt-2 text-sm text-cyan-300">Repo Score: {compareResult.left.stats.repoScore}</p>
+          <p className="text-sm text-cyan-300">Velocity (90d): {compareResult.left.stats.commitVelocity90d}</p>
+          <p className="text-sm text-cyan-300">Security flags: {compareResult.left.issues.security.length}</p>
         </Card>
         <Card title="Right Repository">
-          <p className="text-xs text-slate-200">{compareResult.right.repoUrl}</p>
-          <p className="mt-2 text-sm text-slate-300">Repo Score: {compareResult.right.stats.repoScore}</p>
-          <p className="text-sm text-slate-300">Velocity (90d): {compareResult.right.stats.commitVelocity90d}</p>
-          <p className="text-sm text-slate-300">Security flags: {compareResult.right.issues.security.length}</p>
+          <p className="text-xs text-neon-500">{compareResult.right.repoUrl}</p>
+          <p className="mt-2 text-sm text-cyan-300">Repo Score: {compareResult.right.stats.repoScore}</p>
+          <p className="text-sm text-cyan-300">Velocity (90d): {compareResult.right.stats.commitVelocity90d}</p>
+          <p className="text-sm text-cyan-300">Security flags: {compareResult.right.issues.security.length}</p>
         </Card>
         <Card title="Recommendation">
-          <p className="text-sm text-slate-200">{compareResult.recommendation}</p>
+          <p className="text-sm text-neon-500">{compareResult.recommendation}</p>
         </Card>
       </div>
     )
@@ -61,8 +61,8 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
   if (capability === 'analyze') {
     return (
       <Card title="AI Explain">
-        <p className="text-sm text-slate-200">{analysis.explainIt.summary}</p>
-        <ul className="mt-3 space-y-1 text-xs text-slate-300">
+        <p className="text-sm text-neon-500">{analysis.explainIt.summary}</p>
+        <ul className="mt-3 space-y-1 text-xs text-cyan-300">
           {analysis.explainIt.businessLogic.map((item) => (
             <li key={item}>• {item}</li>
           ))}
@@ -88,14 +88,14 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
     return (
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Security">
-          <ul className="space-y-1 text-xs text-slate-200">
+          <ul className="space-y-1 text-xs text-neon-500">
             {analysis.issues.security.slice(0, 16).map((issue) => (
               <li key={`${issue.file}-${issue.title}`}>• {issue.title} — {issue.file}</li>
             ))}
           </ul>
         </Card>
         <Card title="Code Smells">
-          <ul className="space-y-1 text-xs text-slate-200">
+          <ul className="space-y-1 text-xs text-cyan-300">
             {analysis.issues.smells.slice(0, 16).map((issue) => (
               <li key={`${issue.file}-${issue.title}`}>• {issue.title} — {issue.file}</li>
             ))}
@@ -110,11 +110,11 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Score">
           <p className="text-4xl font-semibold text-neon-500">{analysis.stats.repoScore}/10</p>
-          <p className="text-sm text-slate-300">Coverage estimate: {analysis.stats.testCoverageEstimate}%</p>
-          <p className="text-sm text-slate-300">Commit velocity (90d): {analysis.stats.commitVelocity90d}</p>
+          <p className="text-sm text-cyan-300">Coverage estimate: {analysis.stats.testCoverageEstimate}%</p>
+          <p className="text-sm text-cyan-300">Commit velocity (90d): {analysis.stats.commitVelocity90d}</p>
         </Card>
         <Card title="Most Changed Files">
-          <ul className="space-y-1 text-xs text-slate-200">
+          <ul className="space-y-1 text-xs text-neon-500">
             {analysis.stats.mostChangedFiles.slice(0, 12).map((item) => (
               <li key={item.file}>• {item.file} ({item.commits})</li>
             ))}
@@ -127,8 +127,8 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
   if (capability === 'run') {
     return (
       <Card title="Sandbox Runner">
-        <p className="text-sm text-slate-300">Install: <span className="font-mono">{analysis.runIt.installCommand}</span></p>
-        <p className="text-sm text-slate-300">Start: <span className="font-mono">{analysis.runIt.startCommand}</span></p>
+        <p className="text-sm text-cyan-300">Install: <span className="font-mono">{analysis.runIt.installCommand}</span></p>
+        <p className="text-sm text-cyan-300">Start: <span className="font-mono">{analysis.runIt.startCommand}</span></p>
         <p className="mt-3 text-sm text-neon-500">Preview URL: {analysis.runIt.previewUrl}</p>
       </Card>
     )
@@ -137,9 +137,9 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
   if (capability === 'chat') {
     return (
       <Card title="Repo Chat">
-        <p className="text-sm text-slate-200">{chatResult?.answer ?? 'Ask a repository question to get contextual answers.'}</p>
+        <p className="text-sm text-neon-500">{chatResult?.answer ?? 'Ask a repository question to get contextual answers.'}</p>
         {chatResult?.references?.length ? (
-          <ul className="mt-3 space-y-1 text-xs text-slate-300">
+          <ul className="mt-3 space-y-1 text-xs text-cyan-300">
             {chatResult.references.map((reference) => (
               <li key={`${reference.path}-${reference.line ?? 0}`}>• {reference.path}{reference.line ? `:${reference.line}` : ''}</li>
             ))}
@@ -167,8 +167,8 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
 
   return (
     <Card title="Test Surface">
-      <p className="text-sm text-slate-200">{testResult?.summary ?? 'Run test inspection for command and missing target hints.'}</p>
-      <ul className="mt-3 space-y-1 text-xs text-slate-300">
+      <p className="text-sm text-neon-500">{testResult?.summary ?? 'Run test inspection for command and missing target hints.'}</p>
+      <ul className="mt-3 space-y-1 text-xs text-cyan-300">
         {(testResult?.suggestedMissingTests ?? []).slice(0, 12).map((file) => (
           <li key={file}>• {file}</li>
         ))}
