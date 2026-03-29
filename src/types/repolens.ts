@@ -89,6 +89,17 @@ export type TestResult = {
   summary: string
 }
 
+export type ExplorerTreeResponse = {
+  analysisId: string
+  repoUrl: string
+  files: string[]
+}
+
+export type ExplorerFileResponse = {
+  path: string
+  content: string
+}
+
 export const CAPABILITIES = ['analyze', 'structure', 'issues', 'stats', 'run', 'chat', 'docs', 'compare'] as const
 export type Capability = (typeof CAPABILITIES)[number]
 
