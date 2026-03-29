@@ -3,7 +3,6 @@ import { Dock } from './Dock'
 import { WindowManager } from './WindowManager'
 import { useOsStore } from './useOsStore'
 import { api } from '../services/api'
-import type { Analysis } from '../types/repolens'
 
 const HELP_LINES = [
   'help',

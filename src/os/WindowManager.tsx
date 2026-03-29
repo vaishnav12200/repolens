@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { AnalyzerApp } from '../apps/AnalyzerApp'
 import { ChatApp } from '../apps/ChatApp'
@@ -87,7 +88,7 @@ export function WindowManager({ onExecuteCommand, onAskChat, onOpenFile }: Windo
 
 type OsWindowFrameProps = {
   window: OsWindow
-  children: React.ReactNode
+  children: ReactNode
   onFocus: (id: string) => void
   onClose: (id: string) => void
   onMove: (id: string, x: number, y: number) => void
@@ -134,12 +135,12 @@ function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, o
 
           const onStop = () => {
             dragRef.current = null
-            window.removeEventListener('mousemove', onMovePointer)
-            window.removeEventListener('mouseup', onStop)
+            globalThis.window.removeEventListener('mousemove', onMovePointer)
+            globalThis.window.removeEventListener('mouseup', onStop)
           }
 
-          window.addEventListener('mousemove', onMovePointer)
-          window.addEventListener('mouseup', onStop)
+          globalThis.window.addEventListener('mousemove', onMovePointer)
+          globalThis.window.addEventListener('mouseup', onStop)
         }}
       >
         <div className="window-controls">
@@ -171,12 +172,12 @@ function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, o
 
           const onStop = () => {
             resizeRef.current = null
-            window.removeEventListener('mousemove', onMovePointer)
-            window.removeEventListener('mouseup', onStop)
+            globalThis.window.removeEventListener('mousemove', onMovePointer)
+            globalThis.window.removeEventListener('mouseup', onStop)
           }
 
-          window.addEventListener('mousemove', onMovePointer)
-          window.addEventListener('mouseup', onStop)
+          globalThis.window.addEventListener('mousemove', onMovePointer)
+          globalThis.window.addEventListener('mouseup', onStop)
         }}
       />
     </motion.div>

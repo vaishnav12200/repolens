@@ -221,8 +221,8 @@ export const useOsStore = create<OsState>((set, get) => ({
           restoreRect: { x: window.x, y: window.y, width: window.width, height: window.height },
           x: 12,
           y: 48,
-          width: window.innerWidth - 24,
-          height: window.innerHeight - 120,
+          width: globalThis.window.innerWidth - 24,
+          height: globalThis.window.innerHeight - 120,
         }
       }),
     }))
