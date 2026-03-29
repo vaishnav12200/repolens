@@ -1,140 +1,254 @@
-<div align="center">
+# RepoLens OS
 
-# RepoLens
+RepoLens OS is a web-based, terminal-first developer operating system that runs in the browser.
 
-AI-native repo intelligence: analyze any public Git repository, spin up a runnable sandbox, and surface plain-English insights, structure maps, risks, documentation, and side-by-side comparisons.
+Instead of a traditional webpage, RepoLens OS provides a Linux-inspired desktop with draggable windows, dock-based app launching, and a command-line workflow for repository analysis, AI-assisted Q&A, sandboxed runtime previews, and code exploration.
 
-</div>
+---
 
-## What it does
+## Highlights
 
-- Analyze any public repo URL and detect stack, entry points, and runtime playbooks.
-- Generate architecture slices (folder tree, dependency graph, call graph, heuristics for frontend/backend layers).
-- Surface issues: security smells, hardcoded secrets, missing error handling, outdated dependencies, TODO/FIXME markers.
-- Estimate repo health: commit velocity (90d), most-changed files, bus factor, code age heatmap, test surface coverage.
-- Provide repo chat answers with file references, guided learning steps, glossary, and auto-generated README/API/onboarding docs.
-- Compare two repositories with a heuristic recommendation.
-- Optional “Run” flow starts the repo in a local sandbox and returns a preview URL.
+- Fullscreen desktop environment with top bar, status indicators, and glassmorphism windows.
+- Window manager with drag, resize, minimize, maximize, and focus stacking.
+- Bottom dock launcher for Terminal, Analyzer, Chat, and Settings.
+- Terminal-first UX with command history, tab auto-complete, blinking cursor, and streamed output.
+- Repo Analyzer app for summary, stack, entry points, issues, stats, and score.
+- File Explorer app with syntax-highlighted file preview (Shiki).
+- AI Chat app integrated with repository analysis context.
+- Node.js + Express backend that clones repos, computes heuristics, and exposes APIs.
 
-## Architecture
+---
 
-- Frontend: React 19 + TypeScript + Vite + Tailwind CSS + Framer Motion + Three.js.
-- Backend: Node.js + Express + TypeScript.
-- Visualization: D3 force graph for structure/call graph rendering.
-- Docs preview: Prism syntax highlighting for generated markdown.
-- Analysis engine: clones the target repo (shallow), walks files, samples contents, and builds heuristics for stack, entry points, structure, and risks. Uses git history locally for stats.
-- AI layer: OpenAI-backed optional enhancement for summary, architecture, learning steps, glossary, and chat responses (with heuristic fallback if no API key).
-- Sandbox runner: installs dependencies and attempts to start the repo on an ephemeral port based on detected stack hints (Node/Vite/Python heuristics).
+## Tech Stack
+
+### Frontend
+
+- React 19 + TypeScript + Vite
+- Zustand (OS state and window/session state)
+- Framer Motion (window/dock animations)
+- Tailwind CSS + custom OS-themed CSS
+- Shiki (syntax highlighting in explorer editor)
+
+### Backend
+
+- Node.js + Express + TypeScript
+- Git shallow cloning (`--depth 1`) for analysis inputs
+- Heuristic analyzer for stack, structure, issues, and repo health metrics
+- Optional OpenAI augmentation for richer summary/chat output
+
+---
+
+## Core UX Model
+
+RepoLens OS behaves like a browser OS shell:
+
+1. Boot into desktop with terminal open by default.
+2. Run commands from terminal (primary interaction path).
+3. Open apps/windows with command (`open explorer`) or dock click.
+4. Keep session state in-memory + local persistence for command/history cache.
+
+---
+
+## Terminal Commands
+
+Supported command set:
+
+- `help`
+- `clear`
+- `analyze <repo_url>`
+- `run`
+- `issues`
+- `stats`
+- `structure`
+- `chat <question>`
+- `compare <repo1> <repo2>`
+- `open explorer`
+- `open analyzer`
+
+Notes:
+
+- `analyze` populates analyzer context and cache.
+- `run` starts a sandbox preview from analyzed repository info.
+- `chat` uses current analysis context; if missing, analysis is triggered first.
+- `open explorer` loads file tree and enables click-to-open file preview.
+
+---
 
 ## Prerequisites
 
-- Node.js 20+ (for native ESM, `tsx`, and Vite 8).
-- Git installed and reachable on PATH (for cloning and git stats).
+- Node.js 20+
+- npm 10+
+- Git available on PATH
 
-### Optional environment variables
+Optional environment variables:
 
-- `OPENAI_API_KEY` — enables LLM-enhanced analysis and chat output.
-- `OPENAI_MODEL` — override model name (default: `gpt-4.1-mini`).
+- `OPENAI_API_KEY` — enables AI-enhanced summary/chat responses.
+- `OPENAI_MODEL` — defaults to `gpt-4.1-mini`.
+- `PORT` — backend API port (default `8787`).
 
-## Getting started
+---
+
+## Getting Started
 
 ```bash
-git clone https://github.com/<you>/repolens
+git clone <your-repolens-repo-url>
 cd repolens
 npm install
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- API: http://localhost:8787
+Runtime endpoints:
 
-### Useful scripts
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8787`
 
-- `npm run dev` — run frontend (Vite) and backend (Express) together via `concurrently`.
+### Scripts
+
+- `npm run dev` — runs frontend + backend together.
 - `npm run dev:client` — frontend only.
-- `npm run dev:server` — backend only with `tsx` watch.
-- `npm run build` — type-check then build client bundle.
-- `npm run build:client` — build client bundle only.
-- `npm run start` — start API in production mode (no Vite dev server).
-- `npm run lint` — run ESLint on the repo.
+- `npm run dev:server` — backend only (watch mode).
+- `npm run build` — type-check + production build.
+- `npm run build:client` — client build only.
+- `npm run start` — backend production start.
+- `npm run lint` — ESLint.
 
-## API reference (MVP)
+---
+
+## API Reference
 
 Base URL: `http://localhost:8787`
 
-| Endpoint | Method | Body | Notes |
+| Endpoint | Method | Request Body | Purpose |
 | --- | --- | --- | --- |
-| `/api/health` | GET | — | Simple health probe. |
-| `/api/analyze` | POST | `{ repoUrl: string }` | Full analysis; clones repo, computes stats, returns `analysis.id` used by chat. |
-| `/api/run` | POST | `{ repoUrl: string }` | Reuses/creates analysis, installs deps, attempts to start repo on an ephemeral port; returns `runIt.previewUrl`. |
-| `/api/chat` | POST | `{ analysisId: string, question: string }` | Answers questions against an existing analysis. |
-| `/api/compare` | POST | `{ leftUrl: string, rightUrl: string }` | Analyzes both repos and returns heuristic comparison. |
-| `/api/test-run` | POST | `{ repoUrl: string }` | Returns detected test commands, test file counts, and suggested untested files. |
-| `/api/command` | POST | `{ command: string, repoUrl?: string, leftUrl?: string, rightUrl?: string, analysisId?: string }` | Parses terminal command syntax and returns logs + structured result payload. |
-| `/api/runtime/sessions` | GET | — | Lists currently running sandbox sessions. |
-| `/api/runtime/stop` | POST | `{ repoUrl: string }` | Stops the sandbox session associated with analyzed repo. |
+| `/api/health` | GET | — | Health/status probe. |
+| `/api/analyze` | POST | `{ repoUrl: string }` | Analyze repository and cache analysis object. |
+| `/api/run` | POST | `{ repoUrl: string }` | Install + start analyzed repo, return preview URL. |
+| `/api/chat` | POST | `{ analysisId: string, question: string }` | Ask repository-aware question. |
+| `/api/compare` | POST | `{ leftUrl: string, rightUrl: string }` | Compare two repositories and return recommendation. |
+| `/api/test-run` | POST | `{ repoUrl: string }` | Detect test commands + estimated test surface. |
+| `/api/explorer/tree` | POST | `{ repoUrl: string }` | Return traversed file tree list for explorer. |
+| `/api/explorer/file` | POST | `{ analysisId: string, path: string }` | Return file content for explorer editor preview. |
+| `/api/runtime/sessions` | GET | — | List active sandbox runtime sessions. |
+| `/api/runtime/stop` | POST | `{ repoUrl: string }` | Stop active runtime for repo. |
+| `/api/command` | POST | `{ command: string, repoUrl?: string, leftUrl?: string, rightUrl?: string, analysisId?: string }` | Backend command parser/dispatcher endpoint. |
 
-### Response sketch (analyze)
+---
 
-```json
-{
-	"id": "uuid",
-	"repoUrl": "https://github.com/expressjs/express",
-	"runIt": { "detectedStack": ["Node.js", "Vite"], "installCommand": "npm install", "startCommand": "npm run dev", "previewUrl": "..." },
-	"explainIt": { "summary": "...", "stackBreakdown": [...], "entryPoints": [{"path": "src/main.tsx"}], "businessLogic": [...] },
-	"structure": { "folderTree": [...], "architecture": [...], "callGraph": [...], "dependencyGraph": [...] },
-	"issues": { "security": [...], "outdated": [...], "smells": [...], "missingErrorHandling": [...], "hardcodedSecrets": [...] },
-	"stats": { "mostChangedFiles": [...], "busFactorByFolder": [...], "codeAgeHeatmap": [...], "commitVelocity90d": 0, "testCoverageEstimate": 0, "repoScore": 7.4 },
-	"testing": { "detectedTestCommands": ["npm test"], "testFiles": 0, "untestedCandidateFiles": [...] },
-	"docs": { "readme": "...", "apiOverview": "...", "onboarding": "..." },
-	"learning": { "tutorialSteps": [...], "importantFiles": [...], "glossary": [...] }
-}
+## Project Structure
+
+```text
+src/
+	App.tsx
+	os/
+		Desktop.tsx
+		Dock.tsx
+		WindowManager.tsx
+		useOsStore.ts
+		types.ts
+	apps/
+		TerminalApp.tsx
+		ExplorerApp.tsx
+		ChatApp.tsx
+		AnalyzerApp.tsx
+		SettingsApp.tsx
+	services/
+		api.ts
+	types/
+		repolens.ts
+
+server/src/
+	index.ts
+	routes.ts
+	repoAnalyzer.ts
+	runRepo.ts
+	aiService.ts
+	types.ts
 ```
 
-## Frontend usage
+---
 
-1. Open the app at http://localhost:5173.
-2. From the landing page, paste a public GitHub URL and click **Analyze Repo**.
-3. In workspace mode, use the left capability rail (Explain, Structure, Issues, Stats, Run, Chat, Docs, Compare).
-4. Watch the right terminal panel for simulated execution logs (clone/analyze/detect/render).
-5. Use Docs mode to inspect generated markdown and download it as a file.
-6. Compare mode accepts two repo URLs and returns side-by-side quality heuristics.
+## How Analysis Works
 
-## Folder layout
+1. Clone target repo to temp directory (`git clone --depth 1`).
+2. Walk files excluding noisy directories (`.git`, `node_modules`, build outputs, etc.).
+3. Sample text files and detect:
+	 - stack/framework hints,
+	 - entry points,
+	 - architecture cues,
+	 - issues and code smells,
+	 - statistics and repo score.
+4. Optionally enrich summary and chat responses using OpenAI.
+5. Cache analysis in memory for low-latency follow-up commands.
 
-- [src/components](src/components) — landing, workspace, and visualization UI components.
-- [src/pages](src/pages) — `LandingPage` and `WorkspacePage` screens.
-- [src/features](src/features) — feature-level rendering logic (`FeatureContent`).
-- [src/services](src/services) — API client wrapper.
-- [src/types](src/types) — frontend analysis contracts.
-- [src/hooks](src/hooks) — terminal log stream/typing behavior.
-- [server/src](server/src) — API routes, analyzer, AI integration, sandbox runner, shared types.
-- [public](public) — static assets served by Vite.
+---
 
-Key back-end modules:
+## Sandbox Runner Behavior
 
-- [server/src/index.ts](server/src/index.ts) — Express bootstrap and route mounting.
-- [server/src/routes.ts](server/src/routes.ts) — REST endpoint implementation and in-memory analysis indexes.
-- [server/src/aiService.ts](server/src/aiService.ts) — OpenAI-powered enhancement and chat fallback orchestration.
-- [server/src/repoAnalyzer.ts](server/src/repoAnalyzer.ts) — clone repo, detect stack/entry points, build structure graphs, derive issues and stats, generate docs and learning aids.
-- [server/src/runRepo.ts](server/src/runRepo.ts) — install deps and start the analyzed repo on an ephemeral port based on stack hints.
-- [server/src/types.ts](server/src/types.ts) — shared type contracts for API payloads and analysis results.
+The runtime system attempts to infer install/start commands from stack + repo files:
 
-## Behavior notes and limitations
+- Installs deps (`npm`, `yarn`, `pnpm`, or `pip`) where applicable.
+- Allocates a free random local port.
+- Starts app process with host/port environment settings.
+- Polls preview URL until reachable.
 
-- Public Git repos only; private repos will fail to clone.
-- Clones happen in a temporary directory (shallow, depth 1) and are reused in-memory per repo during the process lifetime; long-running processes may accumulate temp dirs.
-- Stack detection and issue finding are heuristic and intentionally conservative; results are best-effort, not a security audit.
-- Sandbox runner executes the target repo’s install/start commands locally; inspect output and run in a safe environment before using on untrusted code.
+Use caution when running untrusted repositories; execution happens locally.
 
-## Roadmap ideas
+---
 
-- Persist analyses and chat indexes beyond process lifetime.
-- Harden sandboxing (containerize runs) and add resource/time quotas.
-- Add SCM integrations for authenticated/private repos and pull requests.
-- Expand language/framework detectors and test runners.
-- Export richer docs (architecture diagrams, threat model summaries).
+## Explorer Security Notes
+
+- Explorer file reads are bound to analyzed repo root.
+- Path normalization + root-prefix validation is applied to prevent path traversal.
+- File content is truncated to a capped size before response.
+
+---
+
+## Limitations
+
+- Public repositories only (private repo auth is not implemented yet).
+- In-memory cache only (analysis/session data resets on backend restart).
+- Heuristic analysis is best-effort and not a substitute for a formal audit.
+- Shiki language/theme bundles can increase production bundle size.
+
+---
+
+## Troubleshooting
+
+### `analyze` fails
+
+- Verify repo URL is public and reachable.
+- Ensure Git is installed and available in PATH.
+
+### `run` fails
+
+- Target repo may require unsupported runtime dependencies.
+- Check backend logs for install/start command failure output.
+
+### Chat is generic
+
+- Provide `OPENAI_API_KEY` for stronger AI responses.
+- Without API key, fallback heuristic responder is used.
+
+---
+
+## Security Considerations
+
+- Do not run unknown repositories on sensitive machines.
+- Consider containerizing sandbox execution for stricter isolation.
+- Add resource/time limits for production hardening.
+
+---
+
+## Roadmap
+
+- Persistent analysis store (database-backed cache).
+- Containerized sandbox runtime with quotas.
+- Better window manager polish (snapping, dock minimize indicators).
+- Private repo support (token/auth integration).
+- Richer graph visualizations inside Analyzer app.
+
+---
 
 ## License
 
-License to be added. Until then, treat as all rights reserved.
+License not yet specified. Treat as all rights reserved until a license file is added.
