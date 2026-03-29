@@ -3,6 +3,7 @@ import { Dock } from './Dock'
 import { WindowManager } from './WindowManager'
 import { useOsStore } from './useOsStore'
 import { api } from '../services/api'
+import type { WindowApp } from './types'
 
 const HELP_LINES = [
   'help',
@@ -66,6 +67,29 @@ export function Desktop() {
     if (!currentAnalysisId) return null
     return analysisById[currentAnalysisId] ?? null
   }, [analysisById, currentAnalysisId])
+
+  const dockState = useMemo(() => {
+    const apps: WindowApp[] = ['terminal', 'analyzer', 'chat', 'settings']
+    const initial = Object.fromEntries(
+      apps.map((app) => [
+        app,
+        {
+          open: false,
+          minimizedCount: 0,
+        },
+      ]),
+    ) as Record<WindowApp, { open: boolean; minimizedCount: number }>
+
+    for (const item of windows) {
+      if (!(item.app in initial)) continue
+      initial[item.app].open = true
+      if (item.minimized) {
+        initial[item.app].minimizedCount += 1
+      }
+    }
+
+    return initial
+  }, [windows])
 
   const ensureAnalysis = async (targetRepo: string) => {
     const existing = analysisByRepo[targetRepo]
@@ -260,7 +284,7 @@ export function Desktop() {
       </header>
 
       <WindowManager onExecuteCommand={executeCommand} onAskChat={handleAskChat} onOpenFile={handleOpenFile} />
-      <Dock onOpen={openApp} />
+      <Dock onOpen={openApp} appState={dockState} />
 
       {windows.length === 0 ? (
         <button className="reopen-terminal" onClick={() => openApp('terminal')}>

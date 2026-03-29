@@ -1,8 +1,14 @@
 import { motion } from 'framer-motion'
 import type { WindowApp } from './types'
 
+type DockItemState = {
+  open: boolean
+  minimizedCount: number
+}
+
 type DockProps = {
   onOpen: (app: WindowApp) => void
+  appState: Partial<Record<WindowApp, DockItemState>>
 }
 
 const items: Array<{ app: WindowApp; label: string; icon: string }> = [
@@ -12,7 +18,7 @@ const items: Array<{ app: WindowApp; label: string; icon: string }> = [
   { app: 'settings', label: 'Settings', icon: '⚙' },
 ]
 
-export function Dock({ onOpen }: DockProps) {
+export function Dock({ onOpen, appState }: DockProps) {
   return (
     <div className="os-dock-wrap">
       <div className="os-dock">
@@ -21,12 +27,18 @@ export function Dock({ onOpen }: DockProps) {
             key={item.app}
             whileHover={{ y: -6, scale: 1.05 }}
             whileTap={{ scale: 0.96 }}
-            className="dock-item"
+            className={`dock-item ${appState[item.app]?.open ? 'active' : ''} ${
+              (appState[item.app]?.minimizedCount ?? 0) > 0 ? 'minimized' : ''
+            }`}
             onClick={() => onOpen(item.app)}
             title={item.label}
           >
             <span className="dock-icon">{item.icon}</span>
             <span className="dock-label">{item.label}</span>
+            {appState[item.app]?.open ? <span className="dock-dot" /> : null}
+            {(appState[item.app]?.minimizedCount ?? 0) > 0 ? (
+              <span className="dock-badge">{appState[item.app]?.minimizedCount}</span>
+            ) : null}
           </motion.button>
         ))}
       </div>

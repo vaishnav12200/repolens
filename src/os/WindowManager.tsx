@@ -97,8 +97,44 @@ type OsWindowFrameProps = {
   onMaximize: (id: string) => void
 }
 
+const SNAP_THRESHOLD = 28
+const SNAP_TOP = 48
+const SNAP_BOTTOM_GAP = 120
+const SNAP_SIDE_GAP = 12
+
+function applySnap(window: OsWindow, pointerX: number, pointerY: number, onMove: (id: string, x: number, y: number) => void, onResize: (id: string, width: number, height: number) => void, onMaximize: (id: string) => void) {
+  const viewportWidth = globalThis.window.innerWidth
+  const viewportHeight = globalThis.window.innerHeight
+
+  if (pointerY <= SNAP_THRESHOLD) {
+    onMaximize(window.id)
+    return
+  }
+
+  const snappedHeight = viewportHeight - SNAP_BOTTOM_GAP
+  const snappedWidth = Math.max(360, Math.floor((viewportWidth - SNAP_SIDE_GAP * 3) / 2))
+
+  if (pointerX <= SNAP_THRESHOLD) {
+    onMove(window.id, SNAP_SIDE_GAP, SNAP_TOP)
+    onResize(window.id, snappedWidth, snappedHeight)
+    return
+  }
+
+  if (pointerX >= viewportWidth - SNAP_THRESHOLD) {
+    onMove(window.id, viewportWidth - snappedWidth - SNAP_SIDE_GAP, SNAP_TOP)
+    onResize(window.id, snappedWidth, snappedHeight)
+  }
+}
+
 function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, onMinimize, onMaximize }: OsWindowFrameProps) {
-  const dragRef = useRef<{ pointerX: number; pointerY: number; startX: number; startY: number } | null>(null)
+  const dragRef = useRef<{
+    originX: number
+    originY: number
+    currentX: number
+    currentY: number
+    startX: number
+    startY: number
+  } | null>(null)
   const resizeRef = useRef<{ pointerX: number; pointerY: number; startW: number; startH: number } | null>(null)
 
   return (
@@ -121,8 +157,10 @@ function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, o
           if (window.maximized) return
           onFocus(window.id)
           dragRef.current = {
-            pointerX: event.clientX,
-            pointerY: event.clientY,
+            originX: event.clientX,
+            originY: event.clientY,
+            currentX: event.clientX,
+            currentY: event.clientY,
             startX: window.x,
             startY: window.y,
           }
@@ -130,13 +168,22 @@ function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, o
           const onMovePointer = (pointerEvent: MouseEvent) => {
             const state = dragRef.current
             if (!state) return
-            onMove(window.id, state.startX + (pointerEvent.clientX - state.pointerX), state.startY + (pointerEvent.clientY - state.pointerY))
+            state.currentX = pointerEvent.clientX
+            state.currentY = pointerEvent.clientY
+            onMove(window.id, state.startX + (pointerEvent.clientX - state.originX), state.startY + (pointerEvent.clientY - state.originY))
           }
 
           const onStop = () => {
+            const activeDrag = dragRef.current
             dragRef.current = null
             globalThis.window.removeEventListener('mousemove', onMovePointer)
             globalThis.window.removeEventListener('mouseup', onStop)
+
+            if (activeDrag) {
+              const pointerX = activeDrag.currentX
+              const pointerY = activeDrag.currentY
+              applySnap(window, pointerX, pointerY, onMove, onResize, onMaximize)
+            }
           }
 
           globalThis.window.addEventListener('mousemove', onMovePointer)
