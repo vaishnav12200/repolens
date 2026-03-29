@@ -1,4 +1,4 @@
-import type { Analysis, ChatResponse, CompareResult, TestResult } from '../types/repolens'
+import type { Analysis, ChatResponse, CompareResult, ExplorerFileResponse, ExplorerTreeResponse, TestResult } from '../types/repolens'
 
 async function postJson<T>(url: string, body: Record<string, unknown>) {
   const response = await fetch(url, {
@@ -22,4 +22,6 @@ export const api = {
   chat: (analysisId: string, question: string) => postJson<ChatResponse>('/api/chat', { analysisId, question }),
   compare: (leftUrl: string, rightUrl: string) => postJson<CompareResult>('/api/compare', { leftUrl, rightUrl }),
   testRun: (repoUrl: string) => postJson<TestResult>('/api/test-run', { repoUrl }),
+  explorerTree: (repoUrl: string) => postJson<ExplorerTreeResponse>('/api/explorer/tree', { repoUrl }),
+  explorerFile: (analysisId: string, path: string) => postJson<ExplorerFileResponse>('/api/explorer/file', { analysisId, path }),
 }
