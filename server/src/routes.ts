@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { readdir, readFile } from 'node:fs/promises'
+import { join, normalize, resolve, sep } from 'node:path'
 import { enhanceAnalysisWithAI, answerQuestionWithAI } from './aiService.js'
 import { analyzeRepo, answerQuestion, compareAnalyses } from './repoAnalyzer.js'
 import { listRunningRepoSessions, startRepo, stopRepoRunByDir } from './runRepo.js'
@@ -9,6 +11,28 @@ function isHttpRepoUrl(value: string) {
 }
 
 type PersistedAnalysis = RepoAnalysis & { _repoDir?: string }
+
+async function collectFiles(root: string, current = root): Promise<string[]> {
+  const entries = await readdir(current, { withFileTypes: true })
+  const files: string[] = []
+
+  for (const entry of entries) {
+    const full = join(current, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name === '.git' || entry.name === 'node_modules') {
+        continue
+      }
+      files.push(...(await collectFiles(root, full)))
+      continue
+    }
+
+    if (entry.isFile()) {
+      files.push(full.replace(`${root}${sep}`, '').replaceAll('\\', '/'))
+    }
+  }
+
+  return files
+}
 
 function parseCommandInput(raw: string) {
   const parts = raw.match(/(?:"([^"]+)")|(?:'([^']+)')|(\S+)/g) ?? []
@@ -169,6 +193,58 @@ export function createApiRouter() {
     }
   })
 
+  router.post('/explorer/tree', async (req, res) => {
+    const repoUrl = String(req.body?.repoUrl ?? '').trim()
+    if (!repoUrl || !isHttpRepoUrl(repoUrl)) {
+      return res.status(400).json({ error: 'Valid repoUrl is required' })
+    }
+
+    try {
+      const analysis = await ensureAnalysis(repoUrl)
+      if (!analysis._repoDir) {
+        return res.status(500).json({ error: 'Repository directory unavailable' })
+      }
+
+      const files = (await collectFiles(analysis._repoDir)).slice(0, 1200)
+      return res.json({ analysisId: analysis.id, repoUrl: analysis.repoUrl, files })
+    } catch (error) {
+      return res.status(500).json({
+        error: 'Failed to load explorer tree',
+        detail: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  })
+
+  router.post('/explorer/file', async (req, res) => {
+    const analysisId = String(req.body?.analysisId ?? '').trim()
+    const path = String(req.body?.path ?? '').trim()
+
+    if (!analysisId || !path) {
+      return res.status(400).json({ error: 'analysisId and path are required' })
+    }
+
+    const analysis = analysesById.get(analysisId)
+    if (!analysis?._repoDir) {
+      return res.status(404).json({ error: 'analysisId not found' })
+    }
+
+    const root = resolve(analysis._repoDir)
+    const safeTarget = resolve(root, normalize(path))
+    if (!safeTarget.startsWith(`${root}${sep}`) && safeTarget !== root) {
+      return res.status(400).json({ error: 'Invalid file path' })
+    }
+
+    try {
+      const content = await readFile(safeTarget, 'utf-8')
+      return res.json({ path, content: content.slice(0, 150000) })
+    } catch (error) {
+      return res.status(500).json({
+        error: 'Failed to read file',
+        detail: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  })
+
   router.get('/runtime/sessions', (_req, res) => {
     return res.json({ sessions: listRunningRepoSessions() })
   })
@@ -212,7 +288,7 @@ export function createApiRouter() {
       }
 
       if (parsed.command === 'help') {
-        logs.push('available commands: analyze <url>, structure, issues, stats, run, chat <question>, docs, compare <repo1> <repo2>')
+        logs.push('available commands: analyze <url>, structure, issues, stats, run, chat <question>, compare <repo1> <repo2>, open explorer, open analyzer')
         return res.json(response)
       }
 
@@ -313,6 +389,16 @@ export function createApiRouter() {
         response.result = { compare }
         logs.push('Comparison complete.')
         return res.json(response)
+      }
+
+      if (parsed.command === 'open') {
+        const target = parsed.args.join(' ').toLowerCase()
+        if (target === 'explorer' || target === 'analyzer') {
+          response.capability = 'help'
+          logs.push(`Opened ${target} window.`)
+          return res.json(response)
+        }
+        return res.status(400).json({ error: 'open requires explorer or analyzer target' })
       }
 
       return res.status(400).json({ error: `Unsupported command '${parsed.command}'` })
