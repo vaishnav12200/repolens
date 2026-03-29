@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { codeToHtml } from 'shiki'
+
+type CodeToHtml = (code: string, options: { lang: string; theme: string }) => Promise<string>
+
+let codeToHtmlLoader: CodeToHtml | null = null
+
+async function getCodeToHtml() {
+  if (codeToHtmlLoader) {
+    return codeToHtmlLoader
+  }
+
+  const module = await import('shiki')
+  codeToHtmlLoader = module.codeToHtml
+  return codeToHtmlLoader
+}
 
 type ExplorerAppProps = {
   tree: string[]
@@ -28,6 +41,7 @@ function inferLang(path: string) {
 
 export function ExplorerApp({ tree, selectedPath, selectedContent, onOpenFile }: ExplorerAppProps) {
   const [renderedCode, setRenderedCode] = useState('')
+  const [isLoadingHighlighter, setIsLoadingHighlighter] = useState(false)
 
   const files = useMemo(() => tree.filter((item) => !item.endsWith('/')), [tree])
 
@@ -41,6 +55,8 @@ export function ExplorerApp({ tree, selectedPath, selectedContent, onOpenFile }:
       }
 
       try {
+        setIsLoadingHighlighter(true)
+        const codeToHtml = await getCodeToHtml()
         const html = await codeToHtml(selectedContent, {
           lang: inferLang(selectedPath),
           theme: 'github-dark',
@@ -51,6 +67,10 @@ export function ExplorerApp({ tree, selectedPath, selectedContent, onOpenFile }:
       } catch {
         if (!cancelled) {
           setRenderedCode(`<pre>${selectedContent.replaceAll('<', '&lt;')}</pre>`)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingHighlighter(false)
         }
       }
     }
@@ -79,6 +99,7 @@ export function ExplorerApp({ tree, selectedPath, selectedContent, onOpenFile }:
 
       <section className="explorer-editor">
         {selectedPath ? <p className="editor-path">{selectedPath}</p> : <p className="app-muted">Select a file to preview.</p>}
+        {isLoadingHighlighter ? <p className="app-muted">Loading syntax highlighter...</p> : null}
         {renderedCode ? <div className="code-frame" dangerouslySetInnerHTML={{ __html: renderedCode }} /> : null}
       </section>
     </div>

@@ -78,13 +78,14 @@ export function Desktop() {
           minimizedCount: 0,
         },
       ]),
-    ) as Record<WindowApp, { open: boolean; minimizedCount: number }>
+    ) as Partial<Record<WindowApp, { open: boolean; minimizedCount: number }>>
 
     for (const item of windows) {
-      if (!(item.app in initial)) continue
-      initial[item.app].open = true
+      const target = initial[item.app]
+      if (!target) continue
+      target.open = true
       if (item.minimized) {
-        initial[item.app].minimizedCount += 1
+        target.minimizedCount += 1
       }
     }
 
