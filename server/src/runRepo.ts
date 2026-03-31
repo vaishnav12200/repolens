@@ -258,7 +258,10 @@ export async function startRepo(input: StartRepoInput): Promise<StartRepoResult>
 }
 
 export function listRunningRepoSessions(): RuntimeSession[] {
-  return [...runningProcesses.values()].map(({ stop: _stop, ...session }) => session)
+  return [...runningProcesses.values()].map((session) => {
+    const entries = Object.entries(session).filter(([key]) => key !== 'stop')
+    return Object.fromEntries(entries) as RuntimeSession
+  })
 }
 
 export function stopRepoRunByDir(repoDir: string) {
