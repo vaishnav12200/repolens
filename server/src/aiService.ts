@@ -50,11 +50,11 @@ export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
         {
           role: 'system',
           content:
-            'You are a senior codebase analyst. Return strict JSON with keys: summary, architectureExplanation, learningSteps, glossary, readme, apiOverview, onboarding. Keep it concise, factual, and production-grade.',
+            'You are a senior codebase analyst. Return strict JSON with keys: summary, architectureExplanation, learningSteps, glossary, readme, apiOverview, onboarding. Be detailed, factual, and grounded only in provided evidence. summary should be multi-line and comprehensive.',
         },
         {
           role: 'user',
-          content: `Generate enhanced RepoLens analysis narratives from this JSON: ${JSON.stringify(prompt)}`,
+          content: `Generate enhanced RepoLens analysis narratives from this JSON. Keep all claims evidence-grounded and avoid generic filler: ${JSON.stringify(prompt)}`,
         },
       ],
     })
@@ -116,7 +116,7 @@ export async function answerQuestionWithAI(params: {
         {
           role: 'system',
           content:
-            'You answer repository questions with practical engineering detail. Return strict JSON with keys answer (string) and references (array of {path,line?}).',
+            'You answer repository questions with practical engineering detail. Return strict JSON with keys answer (string) and references (array of {path,line?}). Keep answers specific and sufficiently detailed; do not invent files or behavior not present in provided data.',
         },
         {
           role: 'user',

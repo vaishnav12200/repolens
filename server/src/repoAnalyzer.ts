@@ -108,6 +108,13 @@ async function readPackageJson(root: string, files: string) {
   }
 }
 
+function detectPackageManager(files: string[]) {
+  if (files.includes('pnpm-lock.yaml')) return 'pnpm'
+  if (files.includes('yarn.lock')) return 'yarn'
+  if (files.includes('bun.lockb') || files.includes('bun.lock')) return 'bun'
+  return 'npm'
+}
+
 function detectStack(files: string[]): StackItem[] {
   const joined = new Set(files)
   const stack: StackItem[] = []
@@ -160,27 +167,22 @@ function summarizeBusinessLogic(sampleContents: Array<{ file: string; content: s
 function buildFolderTree(files: string[]): string[] {
   const allDirs = new Set<string>()
 
-  for (const file of files.slice(0, 400)) {
+  for (const file of files.slice(0, 900)) {
     const folder = dirname(file)
-    if (folder !== '.') {
-      const parts = folder.split('/')
-      for (let index = 0; index < parts.length; index += 1) {
-        allDirs.add(parts.slice(0, index + 1).join('/'))
-      }
+    if (folder === '.') {
+      continue
+    }
+
+    const parts = folder.split('/').filter(Boolean)
+    for (let index = 0; index < parts.length; index += 1) {
+      allDirs.add(parts.slice(0, index + 1).join('/'))
     }
   }
 
-  const allNodes = [...allDirs, ...files.slice(0, 400)].sort((left, right) => left.localeCompare(right))
-  const lines: string[] = []
-
-  for (const node of allNodes) {
-    const depth = node.split('/').length - 1
-    const name = node.split('/').at(-1) ?? node
-    const indent = depth === 0 ? '' : `${'│   '.repeat(Math.max(0, depth - 1))}├── `
-    lines.push(`${indent}${name}`)
-  }
-
-  return lines.slice(0, 260)
+  return [...allDirs, ...files.slice(0, 900)]
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right))
+    .slice(0, 900)
 }
 
 function buildArchitecture(files: string[]): string[] {
@@ -188,10 +190,16 @@ function buildArchitecture(files: string[]): string[] {
   const hasFrontend = files.some((f) => /src\/.*\.(tsx|jsx|html|css)$/.test(f))
   const hasBackend = files.some((f) => /(server|api|backend)\//.test(f) || /\.(py|go|java)$/.test(f))
   const hasDb = files.some((f) => /(prisma|migrations|schema|database|models)\//.test(f))
+  const hasTests = files.some((f) => /(test|spec)\.(ts|tsx|js|jsx|py|go|java|rs)$/.test(f) || /__tests__/.test(f))
+  const hasCi = files.some((f) => /^\.github\/workflows\/.+\.ya?ml$/.test(f) || /^\.gitlab-ci\.yml$/.test(f))
+  const hasDocker = files.some((f) => /(^|\/)Dockerfile$/.test(f) || /docker-compose\.ya?ml$/.test(f))
 
   if (hasFrontend) lines.push('Frontend client handles user interactions and API calls.')
   if (hasBackend) lines.push('Backend/service layer contains core business logic and integrations.')
   if (hasDb) lines.push('Persistence layer likely managed via ORM/schema/migration files.')
+  if (hasTests) lines.push('Test surface exists and can be used to validate behavior changes.')
+  if (hasCi) lines.push('CI pipeline configuration is present for automated checks/deploy workflows.')
+  if (hasDocker) lines.push('Containerization artifacts are present for local/prod environment consistency.')
   if (!hasFrontend && !hasBackend) lines.push('Architecture appears library-centric rather than multi-tier app.')
 
   return lines
@@ -399,37 +407,88 @@ function inferRuntimeCommands(
   packageJson: { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> } | null,
   files: string[],
 ) {
+  const packageManager = detectPackageManager(files)
+  const runWithManager = (scriptName: string) => {
+    if (packageManager === 'npm') return `npm run ${scriptName}`
+    if (packageManager === 'pnpm') return `pnpm ${scriptName}`
+    if (packageManager === 'yarn') return `yarn ${scriptName}`
+    return `bun run ${scriptName}`
+  }
+  const installWithManager =
+    packageManager === 'npm'
+      ? 'npm install'
+      : packageManager === 'pnpm'
+        ? 'pnpm install'
+        : packageManager === 'yarn'
+          ? 'yarn install --frozen-lockfile || yarn install'
+          : 'bun install'
+
   if (stack.some((item) => item.name === 'Python')) {
+    if (files.includes('pyproject.toml')) {
+      return {
+        installCommand: 'python -m pip install . || pip install .',
+        startCommand: files.includes('main.py') ? 'python main.py' : files.includes('app.py') ? 'python app.py' : 'python -m http.server 8000',
+      }
+    }
+
     return {
       installCommand: 'python -m pip install -r requirements.txt || pip install -r requirements.txt',
       startCommand: files.includes('main.py') ? 'python main.py' : files.includes('app.py') ? 'python app.py' : 'python -m http.server 8000',
     }
   }
 
+  if (stack.some((item) => item.name === 'Go')) {
+    return {
+      installCommand: 'go mod download',
+      startCommand: files.includes('main.go') ? 'go run main.go' : 'go run ./...',
+    }
+  }
+
+  if (stack.some((item) => item.name === 'Rust')) {
+    return {
+      installCommand: 'cargo build',
+      startCommand: 'cargo run',
+    }
+  }
+
+  if (stack.some((item) => item.name === 'Java') && files.includes('pom.xml')) {
+    return {
+      installCommand: 'mvn -q -DskipTests package',
+      startCommand: 'mvn spring-boot:run || mvn exec:java',
+    }
+  }
+
   if (packageJson?.scripts?.dev) {
     return {
-      installCommand: 'npm install',
-      startCommand: 'npm run dev',
+      installCommand: installWithManager,
+      startCommand: runWithManager('dev'),
     }
   }
 
   if (packageJson?.scripts?.start) {
     return {
-      installCommand: 'npm install',
-      startCommand: 'npm start',
+      installCommand: installWithManager,
+      startCommand: packageManager === 'npm' ? 'npm start' : packageManager === 'pnpm' ? 'pnpm start' : packageManager === 'yarn' ? 'yarn start' : 'bun run start',
+    }
+  }
+
+  if (packageJson?.scripts?.preview) {
+    return {
+      installCommand: installWithManager,
+      startCommand: runWithManager('preview'),
     }
   }
 
   if (stack.some((item) => item.name === 'Vite')) {
     return {
-      installCommand: 'npm install',
-      startCommand: 'npm run dev',
+      installCommand: installWithManager,
+      startCommand: runWithManager('dev'),
     }
   }
 
   return {
-    installCommand: 'npm install',
-    startCommand: 'npm start',
+    installCommand: installWithManager,
+    startCommand: packageManager === 'npm' ? 'npm start' : packageManager === 'pnpm' ? 'pnpm start' : packageManager === 'yarn' ? 'yarn start' : 'bun run start',
   }
 }
 
@@ -449,11 +508,54 @@ function calculateRepoScore(input: {
   return Math.max(0, Math.min(10, Number((raw / 10).toFixed(1))))
 }
 
-function generateDocs(repoUrl: string, stack: StackItem[], entryPoints: FileRef[], logic: string[]) {
-  const readme = `# RepoLens Generated README\n\n## Source\n${repoUrl}\n\n## What this project does\n${logic.map((l) => `- ${l}`).join('\n')}\n\n## Quick Start\n- Install dependencies\n- Run the app\n- Inspect entry points below\n\n## Entry Points\n${entryPoints.map((e) => `- ${e.path}`).join('\n')}`
+function buildDetailedSummary(input: {
+  repoUrl: string
+  files: string[]
+  stack: StackItem[]
+  entryPoints: FileRef[]
+  issues: RepoAnalysis['issues']
+  testing: { coverage: number; testFiles: number }
+  commitVelocity90d: number
+}) {
+  const fileCount = input.files.length
+  const dirsCount = new Set(input.files.map((file) => dirname(file)).filter((dir) => dir !== '.')).size
+  const keyExt = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.java', '.rs', '.md']
+  const extBreakdown = keyExt
+    .map((ext) => ({ ext, count: input.files.filter((file) => extname(file) === ext).length }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6)
 
-  const apiOverview = `## API/Service Overview\n${stack.map((s) => `- ${s.name}: ${s.evidence}`).join('\n')}`
-  const onboarding = `## Onboarding Guide\n1. Read repository root docs\n2. Start with ${entryPoints[0]?.path ?? 'primary entry point'}\n3. Follow request/data flow through services\n4. Run tests and inspect failures`
+  return [
+    `Repository: ${input.repoUrl}`,
+    `Scanned ${fileCount} files across ${dirsCount} directories.`,
+    `Detected stack signals: ${input.stack.map((item) => item.name).join(', ') || 'No strong stack signal detected'}.`,
+    `Entry points: ${input.entryPoints.map((entry) => entry.path).slice(0, 8).join(', ') || 'No common entry point pattern matched'}.`,
+    `Code quality snapshot: ${input.issues.security.length} security flags, ${input.issues.smells.length} smell indicators, ${input.issues.missingErrorHandling.length} potential missing error-handling spots.`,
+    `Testing snapshot: ${input.testing.testFiles} test files detected, estimated coverage ${input.testing.coverage}%.`,
+    `Activity snapshot: ${input.commitVelocity90d} commits in the last 90 days.`,
+    `File type concentration: ${extBreakdown.map((item) => `${item.ext}(${item.count})`).join(', ') || 'N/A'}.`,
+  ].join('\n')
+}
+
+function generateDocs(input: {
+  repoUrl: string
+  stack: StackItem[]
+  entryPoints: FileRef[]
+  logic: string[]
+  runtime: { installCommand: string; startCommand: string }
+  files: string[]
+  issues: RepoAnalysis['issues']
+  testing: { coverage: number; testFiles: number; untested: string[] }
+}) {
+  const topFolders = [...new Set(input.files.map((file) => file.split('/')[0]).filter((name) => name && !name.includes('.')))]
+    .slice(0, 12)
+  const stackLines = input.stack.length > 0 ? input.stack.map((s) => `- ${s.name}: ${s.evidence}`).join('\n') : '- No definitive stack markers found.'
+  const entryLines = input.entryPoints.length > 0 ? input.entryPoints.map((e) => `- ${e.path}`).join('\n') : '- No standard entry points detected.'
+  const readme = `# RepoLens Generated README\n\n## Source\n${input.repoUrl}\n\n## Project Behavior Snapshot\n${input.logic.map((l) => `- ${l}`).join('\n')}\n\n## Repository Footprint\n- Total files scanned: ${input.files.length}\n- Top folders: ${topFolders.join(', ') || 'N/A'}\n- Security findings: ${input.issues.security.length}\n- Code smells: ${input.issues.smells.length}\n- Estimated test coverage: ${input.testing.coverage}%\n\n## Runtime Commands\n- Install: \`${input.runtime.installCommand}\`\n- Start: \`${input.runtime.startCommand}\`\n\n## Entry Points\n${entryLines}`
+
+  const apiOverview = `## API/Service Overview\n${stackLines}\n\n### Architecture Notes\n${input.logic.map((line) => `- ${line}`).join('\n')}`
+  const onboarding = `## Onboarding Guide\n1. Read root docs and package/manifest files to confirm setup assumptions.\n2. Start execution tracing from ${input.entryPoints[0]?.path ?? 'the primary bootstrap file'}.\n3. Follow request/data flow through controllers, services, and persistence modules.\n4. Run tests using detected commands and inspect failures first.\n5. Prioritize hardcoded secret and error-handling hotspots before feature work.\n\n### Untested Candidate Files\n${input.testing.untested.slice(0, 20).map((file) => `- ${file}`).join('\n') || '- No obvious untested candidates found from heuristic scan.'}`
 
   return { readme, apiOverview, onboarding }
 }
@@ -507,7 +609,25 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
     smellFindings: issues.smells.length,
     stackSignals: stack.length,
   })
-  const docs = generateDocs(repoUrl, stack, entryPoints, logic)
+  const docs = generateDocs({
+    repoUrl,
+    stack,
+    entryPoints,
+    logic,
+    runtime,
+    files,
+    issues,
+    testing,
+  })
+  const detailedSummary = buildDetailedSummary({
+    repoUrl,
+    files,
+    stack,
+    entryPoints,
+    issues,
+    testing,
+    commitVelocity90d,
+  })
   const glossary = buildGlossary(sampleContents)
   const hotspots = [...issues.hardcodedSecrets, ...issues.missingErrorHandling].slice(0, 15)
   const detectedTestCommands = detectTestCommands(packageJson, files)
@@ -539,7 +659,7 @@ export async function analyzeRepo(repoUrl: string): Promise<RepoAnalysis & { _re
         'Preview URL is assigned dynamically when the run command is executed.',
       ],
     },
-    explainIt: { summary: `Analyzed ${files.length} files. ${logic[0] ?? ''}`, stackBreakdown: stack, entryPoints, businessLogic: logic },
+    explainIt: { summary: detailedSummary, stackBreakdown: stack, entryPoints, businessLogic: logic },
     structure: { folderTree: buildFolderTree(files), architecture: buildArchitecture(files), callGraph: buildCallGraph(sampleContents), dependencyGraph: buildDependencyGraph(sampleContents) },
     issues,
     stats: {
