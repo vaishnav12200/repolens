@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 type Node = {
   name: string
@@ -31,8 +31,52 @@ type Props = {
 }
 
 export function TreeView({ paths }: Props) {
-  const tree = useMemo(() => buildTree(paths.slice(0, 180)), [paths])
+  const tree = useMemo(() => buildTree(paths.slice(0, 700)), [paths])
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ root: true })
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1, rotateDeg: 0 })
+  const dragRef = useRef<{ x: number; y: number; mode: 'pan' | 'rotate' } | null>(null)
+
+  const onMouseDown: React.MouseEventHandler<HTMLDivElement> = (event) => {
+    if ((event.target as HTMLElement).closest('button')) {
+      return
+    }
+
+    dragRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      mode: event.shiftKey ? 'rotate' : 'pan',
+    }
+  }
+
+  const onMouseMove: React.MouseEventHandler<HTMLDivElement> = (event) => {
+    if (!dragRef.current) return
+
+    const deltaX = event.clientX - dragRef.current.x
+    const deltaY = event.clientY - dragRef.current.y
+    dragRef.current.x = event.clientX
+    dragRef.current.y = event.clientY
+
+    setTransform((prev) => {
+      if (dragRef.current?.mode === 'rotate') {
+        return { ...prev, rotateDeg: prev.rotateDeg + deltaX * 0.25 }
+      }
+      return { ...prev, x: prev.x + deltaX, y: prev.y + deltaY }
+    })
+  }
+
+  const onMouseUp: React.MouseEventHandler<HTMLDivElement> = () => {
+    dragRef.current = null
+  }
+
+  const onWheel: React.WheelEventHandler<HTMLDivElement> = (event) => {
+    if (event.ctrlKey || event.shiftKey) {
+      setTransform((prev) => ({ ...prev, rotateDeg: prev.rotateDeg + event.deltaY * 0.08 }))
+      return
+    }
+
+    const next = Math.min(2.6, Math.max(0.55, transform.scale - event.deltaY * 0.0015))
+    setTransform((prev) => ({ ...prev, scale: next }))
+  }
 
   const renderNode = (node: Node, depth = 0) => {
     const children = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name))
@@ -57,5 +101,27 @@ export function TreeView({ paths }: Props) {
     )
   }
 
-  return <div className="max-h-[360px] overflow-auto rounded-lg border border-slate-800 bg-slate-950/80 py-2">{renderNode(tree)}</div>
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-cyan-300/80">Drag to move · Shift+drag to rotate · Wheel to zoom</p>
+      <div
+        className="max-h-[360px] overflow-hidden rounded-lg border border-slate-800 bg-slate-950/80"
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onWheel={onWheel}
+      >
+        <div
+          className="min-h-[360px] py-2"
+          style={{
+            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotateDeg}deg)`,
+            transformOrigin: 'top left',
+          }}
+        >
+          {renderNode(tree)}
+        </div>
+      </div>
+    </div>
+  )
 }

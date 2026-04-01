@@ -16,6 +16,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "d3": "^7.9.0",
+    "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "framer-motion": "^12.23.24",
     "openai": "^5.20.2",
