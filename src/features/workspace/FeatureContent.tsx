@@ -61,7 +61,7 @@ export function FeatureContent({ capability, analysis, compareResult, testResult
   if (capability === 'analyze') {
     return (
       <Card title="AI Explain">
-        <p className="text-sm text-neon-500">{analysis.explainIt.summary}</p>
+        <p className="whitespace-pre-line text-sm text-neon-500">{analysis.explainIt.summary}</p>
         <ul className="mt-3 space-y-1 text-xs text-cyan-300">
           {analysis.explainIt.businessLogic.map((item) => (
             <li key={item}>• {item}</li>
