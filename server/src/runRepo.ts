@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
-import { extname, join } from 'node:path'
+import { join } from 'node:path'
 import type { RuntimeSession, StackItem } from './types.js'
 
 type StartRepoInput = {
@@ -91,11 +91,22 @@ async function inferStartCommand(dir: string, stack: StackItem[], port: number, 
   }
 
   if (await hasFile(dir, 'package.json')) {
-    return `PORT=${port} npm run dev || PORT=${port} npm start`
+    if (await hasFile(dir, 'pnpm-lock.yaml')) {
+      return `PORT=${port} pnpm dev -- --host 0.0.0.0 --port ${port} || PORT=${port} pnpm start`
+    }
+
+    if (await hasFile(dir, 'yarn.lock')) {
+      return `PORT=${port} yarn dev --host 0.0.0.0 --port ${port} || PORT=${port} yarn start`
+    }
+
+    if (await hasFile(dir, 'bun.lockb') || await hasFile(dir, 'bun.lock')) {
+      return `PORT=${port} bun run dev -- --host 0.0.0.0 --port ${port} || PORT=${port} bun run start`
+    }
+
+    return `PORT=${port} npm run dev -- --host 0.0.0.0 --port ${port} || PORT=${port} npm start`
   }
 
-  const staticFileExtensions = ['.html', '.md']
-  const canServeStatic = staticFileExtensions.some((extension) => extname(dir).toLowerCase() === extension)
+  const canServeStatic = (await hasFile(dir, 'index.html')) || (await hasFile(dir, 'README.md'))
   if (canServeStatic) {
     return `python -m http.server ${port}`
   }

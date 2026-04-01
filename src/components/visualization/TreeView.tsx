@@ -74,8 +74,10 @@ export function TreeView({ paths }: Props) {
       return
     }
 
-    const next = Math.min(2.6, Math.max(0.55, transform.scale - event.deltaY * 0.0015))
-    setTransform((prev) => ({ ...prev, scale: next }))
+    setTransform((prev) => ({
+      ...prev,
+      scale: Math.min(2.6, Math.max(0.55, prev.scale - event.deltaY * 0.0015)),
+    }))
   }
 
   const renderNode = (node: Node, depth = 0) => {
