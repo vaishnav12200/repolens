@@ -1,5 +1,16 @@
 import type { Analysis, ChatResponse, CompareResult, ExplorerFileResponse, ExplorerTreeResponse, TestResult } from '../types/repolens'
 
+const configuredBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? ''
+const apiBase = configuredBase.replace(/\/$/, '')
+
+function apiUrl(path: string) {
+  if (!apiBase) {
+    return path
+  }
+
+  return `${apiBase}${path}`
+}
+
 async function postJson<T>(url: string, body: Record<string, unknown>) {
   const response = await fetch(url, {
     method: 'POST',
@@ -17,11 +28,11 @@ async function postJson<T>(url: string, body: Record<string, unknown>) {
 }
 
 export const api = {
-  analyze: (repoUrl: string) => postJson<Analysis>('/api/analyze', { repoUrl }),
-  run: (repoUrl: string) => postJson<Analysis>('/api/run', { repoUrl }),
-  chat: (analysisId: string, question: string) => postJson<ChatResponse>('/api/chat', { analysisId, question }),
-  compare: (leftUrl: string, rightUrl: string) => postJson<CompareResult>('/api/compare', { leftUrl, rightUrl }),
-  testRun: (repoUrl: string) => postJson<TestResult>('/api/test-run', { repoUrl }),
-  explorerTree: (repoUrl: string) => postJson<ExplorerTreeResponse>('/api/explorer/tree', { repoUrl }),
-  explorerFile: (analysisId: string, path: string) => postJson<ExplorerFileResponse>('/api/explorer/file', { analysisId, path }),
+  analyze: (repoUrl: string) => postJson<Analysis>(apiUrl('/api/analyze'), { repoUrl }),
+  run: (repoUrl: string) => postJson<Analysis>(apiUrl('/api/run'), { repoUrl }),
+  chat: (analysisId: string, question: string) => postJson<ChatResponse>(apiUrl('/api/chat'), { analysisId, question }),
+  compare: (leftUrl: string, rightUrl: string) => postJson<CompareResult>(apiUrl('/api/compare'), { leftUrl, rightUrl }),
+  testRun: (repoUrl: string) => postJson<TestResult>(apiUrl('/api/test-run'), { repoUrl }),
+  explorerTree: (repoUrl: string) => postJson<ExplorerTreeResponse>(apiUrl('/api/explorer/tree'), { repoUrl }),
+  explorerFile: (analysisId: string, path: string) => postJson<ExplorerFileResponse>(apiUrl('/api/explorer/file'), { analysisId, path }),
 }
