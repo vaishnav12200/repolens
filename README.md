@@ -85,6 +85,7 @@ Optional environment variables:
 - `OPENAI_API_KEY` — enables AI-enhanced summary/chat responses.
 - `OPENAI_MODEL` — defaults to `gpt-4.1-mini`.
 - `PORT` — backend API port (default `8787`).
+- `VITE_API_BASE_URL` — frontend API base URL for production (set to your Railway backend URL).
 
 ---
 
@@ -101,6 +102,57 @@ Runtime endpoints:
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:8787`
+
+## Deploy Backend on Railway (Recommended)
+
+Yes — host the backend through your GitHub repo on Railway.
+
+### 1) Push this repo to GitHub
+
+```bash
+git add .
+git commit -m "prepare railway deploy"
+git push origin main
+```
+
+### 2) Create Railway service from GitHub
+
+1. Open Railway dashboard.
+2. New Project → Deploy from GitHub repo.
+3. Select this repository.
+4. Root directory: project root (`/`).
+5. Start command: `npm run start`.
+
+### 3) Set Railway environment variables
+
+In Railway service settings, add:
+
+- `OPENAI_API_KEY=<your_openai_key>`
+- `OPENAI_MODEL=gpt-4.1-mini`
+
+Do not set `PORT` manually on Railway; Railway injects it.
+
+### 4) Copy Railway backend URL
+
+After deploy, Railway gives a URL like:
+
+`https://repolens-api-production.up.railway.app`
+
+### 5) Point frontend to Railway API and deploy Hosting
+
+Create `.env.production` in this repo:
+
+```bash
+echo "VITE_API_BASE_URL=https://YOUR-RAILWAY-URL" > .env.production
+```
+
+Then deploy frontend:
+
+```bash
+npm run deploy:hosting
+```
+
+Now Firebase frontend calls Railway backend directly.
 
 ## Deploy to Firebase (Existing Project)
 
