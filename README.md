@@ -102,6 +102,68 @@ Runtime endpoints:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:8787`
 
+## Deploy to Firebase (Existing Project)
+
+This setup deploys:
+
+- Frontend (Vite `dist/`) to Firebase Hosting
+- Backend API (`/api/**`) to Cloud Run service `repolens-api` via Hosting rewrite
+
+### 1) One-time CLI setup
+
+```bash
+npm install -g firebase-tools
+curl -sSL https://sdk.cloud.google.com | bash
+exec -l $SHELL
+gcloud auth login
+firebase login
+```
+
+### 2) Point to your existing Firebase project
+
+Update `.firebaserc` default project id or run:
+
+```bash
+firebase use <your-existing-project-id>
+```
+
+### 3) Deploy backend API to Cloud Run
+
+```bash
+npm run deploy:api
+```
+
+Set API runtime secrets/env (including OpenAI key):
+
+```bash
+gcloud run services update repolens-api \
+	--region us-central1 \
+	--set-env-vars OPENAI_API_KEY=<your_openai_key>,OPENAI_MODEL=gpt-4.1-mini
+```
+
+### 4) Deploy frontend Hosting
+
+```bash
+npm run deploy:hosting
+```
+
+### 5) Attach custom domain `repolenswebos.com`
+
+```bash
+firebase hosting:sites:create repolenswebos
+firebase target:apply hosting web repolenswebos
+firebase deploy --only hosting:web
+firebase hosting:channel:open live
+```
+
+Then in Firebase Console → Hosting → Custom domains:
+
+- Add `repolenswebos.com`
+- Add `www.repolenswebos.com` (optional)
+- Copy the DNS records shown by Firebase into your domain registrar
+
+After DNS verification + SSL provisioning, your app will be live on the custom domain.
+
 ### Scripts
 
 - `npm run dev` — runs frontend + backend together.
@@ -110,6 +172,9 @@ Runtime endpoints:
 - `npm run build` — type-check + production build.
 - `npm run build:client` — client build only.
 - `npm run start` — backend production start.
+- `npm run deploy:api` — deploy API container to Cloud Run.
+- `npm run deploy:hosting` — build + deploy frontend to Firebase Hosting.
+- `npm run deploy:all` — deploy API then Hosting.
 - `npm run lint` — ESLint.
 
 ---
