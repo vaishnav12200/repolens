@@ -11,7 +11,10 @@
     "build:client": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "tsx server/src/index.ts"
+    "start": "tsx server/src/index.ts",
+    "deploy:hosting": "npm run build:client && firebase deploy --only hosting",
+    "deploy:api": "gcloud run deploy repolens-api --source . --region us-central1 --allow-unauthenticated --port 8080",
+    "deploy:all": "npm run deploy:api && npm run deploy:hosting"
   },
   "dependencies": {
     "cors": "^2.8.6",
