@@ -147,19 +147,16 @@ gcloud run services update repolens-api \
 npm run deploy:hosting
 ```
 
-### 5) Attach custom domain `repolenswebos.com`
+### 5) Use site name `repolenswebos`
 
 ```bash
 firebase deploy --only hosting
 ```
 
-Then in Firebase Console → Hosting → Custom domains:
+After deploy, your app will be available on Firebase Hosting URLs for that site, such as:
 
-- Add `repolenswebos.com`
-- Add `www.repolenswebos.com` (optional)
-- Copy the DNS records shown by Firebase into your domain registrar
-
-After DNS verification + SSL provisioning, your app will be live on the custom domain.
+- `https://repolenswebos.web.app`
+- `https://repolenswebos.firebaseapp.com`
 
 ### Scripts
 
