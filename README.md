@@ -150,10 +150,7 @@ npm run deploy:hosting
 ### 5) Attach custom domain `repolenswebos.com`
 
 ```bash
-firebase hosting:sites:create repolenswebos
-firebase target:apply hosting web repolenswebos
-firebase deploy --only hosting:web
-firebase hosting:channel:open live
+firebase deploy --only hosting
 ```
 
 Then in Firebase Console → Hosting → Custom domains:
