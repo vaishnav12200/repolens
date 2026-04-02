@@ -321,9 +321,9 @@ export function createApiRouter() {
       }
 
       if (parsed.command === 'run') {
-        const repoUrl = defaultRepo
+        const repoUrl = parsed.args[0] ?? defaultRepo
         if (!repoUrl || !isHttpRepoUrl(repoUrl)) {
-          return res.status(400).json({ error: 'run requires repoUrl in body' })
+          return res.status(400).json({ error: 'run requires a valid repo URL' })
         }
 
         const analysis = await ensureAnalysis(repoUrl)
