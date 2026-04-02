@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Analysis } from '../types/repolens'
+import type { Capability } from '../types/repolens'
 import type { ChatMessage, OpenFile, OsSnapshot, OsWindow, TerminalLine, WindowApp } from './types'
 
 const SNAPSHOT_KEY = 'repolens-os-v1'
@@ -9,6 +10,7 @@ type OsState = {
   nextWindowId: number
   nextZIndex: number
   repoUrl: string
+  activeCapability: Capability
   currentAnalysisId: string | null
   analysisByRepo: Record<string, Analysis>
   analysisById: Record<string, Analysis>
@@ -30,6 +32,7 @@ type OsState = {
   toggleMaximize: (id: string) => void
   setBusy: (busy: boolean) => void
   setRepoUrl: (url: string) => void
+  setActiveCapability: (capability: Capability) => void
   cacheAnalysis: (analysis: Analysis) => void
   pushLine: (text: string, kind?: TerminalLine['kind']) => string
   updateLine: (id: string, text: string) => void
@@ -51,9 +54,10 @@ const appTitle: Record<WindowApp, string> = {
   settings: 'Settings',
 }
 
-function persistSnapshot(state: Pick<OsState, 'repoUrl' | 'analysisByRepo' | 'analysisById' | 'currentAnalysisId' | 'terminalLines' | 'commandHistory' | 'chatMessages' | 'openFiles'>) {
+function persistSnapshot(state: Pick<OsState, 'repoUrl' | 'activeCapability' | 'analysisByRepo' | 'analysisById' | 'currentAnalysisId' | 'terminalLines' | 'commandHistory' | 'chatMessages' | 'openFiles'>) {
   const snapshot: OsSnapshot = {
     repoUrl: state.repoUrl,
+    activeCapability: state.activeCapability,
     analysisByRepo: state.analysisByRepo,
     analysisById: state.analysisById,
     currentAnalysisId: state.currentAnalysisId,
@@ -92,6 +96,7 @@ export const useOsStore = create<OsState>((set, get) => ({
   nextWindowId: 2,
   nextZIndex: 3,
   repoUrl: 'https://github.com/expressjs/express',
+  activeCapability: 'analyze',
   currentAnalysisId: null,
   analysisByRepo: {},
   analysisById: {},
@@ -112,6 +117,7 @@ export const useOsStore = create<OsState>((set, get) => ({
       set((state) => ({
         ...state,
         repoUrl: snapshot.repoUrl || state.repoUrl,
+        activeCapability: snapshot.activeCapability ?? state.activeCapability,
         analysisByRepo: snapshot.analysisByRepo ?? {},
         analysisById: snapshot.analysisById ?? {},
         currentAnalysisId: snapshot.currentAnalysisId ?? null,
@@ -230,6 +236,10 @@ export const useOsStore = create<OsState>((set, get) => ({
   setBusy: (busy) => set({ busy }),
   setRepoUrl: (repoUrl) => {
     set({ repoUrl })
+    persistSnapshot(get())
+  },
+  setActiveCapability: (activeCapability) => {
+    set({ activeCapability })
     persistSnapshot(get())
   },
   cacheAnalysis: (analysis) => {

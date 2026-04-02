@@ -1,4 +1,5 @@
 import type { Analysis } from '../types/repolens'
+import type { Capability } from '../types/repolens'
 
 export type WindowApp = 'terminal' | 'analyzer' | 'explorer' | 'chat' | 'settings'
 
@@ -35,6 +36,7 @@ export type OpenFile = {
 
 export type OsSnapshot = {
   repoUrl: string
+  activeCapability: Capability
   analysisByRepo: Record<string, Analysis>
   analysisById: Record<string, Analysis>
   currentAnalysisId: string | null
