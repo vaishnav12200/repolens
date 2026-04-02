@@ -158,7 +158,8 @@ export function Desktop() {
       }
 
       if (command === 'run') {
-        const activeRepo = focusedAnalysis?.repoUrl ?? repoUrl
+        const activeRepo = args[0] ?? focusedAnalysis?.repoUrl ?? repoUrl
+        setRepoUrl(activeRepo)
         await streamStatus(['preparing sandbox runner...', 'installing dependencies...', 'starting repository runtime...'])
         const runResult = await api.run(activeRepo)
         cacheAnalysis(runResult)
