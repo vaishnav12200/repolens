@@ -45,6 +45,7 @@ export function Desktop() {
   const openApp = useOsStore((state) => state.openApp)
   const setBusy = useOsStore((state) => state.setBusy)
   const setRepoUrl = useOsStore((state) => state.setRepoUrl)
+  const setActiveCapability = useOsStore((state) => state.setActiveCapability)
   const cacheAnalysis = useOsStore((state) => state.cacheAnalysis)
   const pushLine = useOsStore((state) => state.pushLine)
   const updateLine = useOsStore((state) => state.updateLine)
@@ -151,6 +152,7 @@ export function Desktop() {
         const targetRepo = args[0] ?? repoUrl
         setRepoUrl(targetRepo)
         await ensureAnalysis(targetRepo)
+        setActiveCapability('analyze')
         openApp('analyzer')
         return
       }
@@ -160,6 +162,8 @@ export function Desktop() {
         await streamStatus(['preparing sandbox runner...', 'installing dependencies...', 'starting repository runtime...'])
         const runResult = await api.run(activeRepo)
         cacheAnalysis(runResult)
+        setActiveCapability('run')
+        openApp('analyzer')
         await streamTyped(`preview url: ${runResult.runIt.previewUrl}`, 'success')
         return
       }
@@ -170,6 +174,7 @@ export function Desktop() {
         await streamTyped(`security issues: ${analysis.issues.security.length}`)
         await streamTyped(`code smells: ${analysis.issues.smells.length}`)
         await streamTyped(`hardcoded secrets: ${analysis.issues.hardcodedSecrets.length}`)
+        setActiveCapability('issues')
         openApp('analyzer')
         return
       }
@@ -180,6 +185,7 @@ export function Desktop() {
         await streamTyped(`repo score: ${analysis.stats.repoScore}`, 'success')
         await streamTyped(`velocity(90d): ${analysis.stats.commitVelocity90d}`)
         await streamTyped(`coverage estimate: ${analysis.stats.testCoverageEstimate}%`)
+        setActiveCapability('stats')
         openApp('analyzer')
         return
       }
@@ -189,6 +195,7 @@ export function Desktop() {
         const analysis = await ensureAnalysis(activeRepo)
         await streamTyped(`architecture nodes: ${analysis.structure.architecture.length}`)
         await streamTyped(`dependency graph edges: ${analysis.structure.dependencyGraph.length}`)
+        setActiveCapability('structure')
         openApp('analyzer')
         return
       }
@@ -219,6 +226,8 @@ export function Desktop() {
 
         await streamStatus(['analyzing left repository...', 'analyzing right repository...', 'building differential report...'])
         const compareResult = await api.compare(args[0], args[1])
+        setActiveCapability('compare')
+        openApp('analyzer')
         await streamTyped(`recommendation: ${compareResult.recommendation}`, 'success')
         return
       }

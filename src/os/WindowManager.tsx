@@ -21,6 +21,7 @@ export function WindowManager({ onExecuteCommand, onAskChat, onOpenFile }: Windo
   const terminalLines = useOsStore((state) => state.terminalLines)
   const analysisById = useOsStore((state) => state.analysisById)
   const currentAnalysisId = useOsStore((state) => state.currentAnalysisId)
+  const activeCapability = useOsStore((state) => state.activeCapability)
   const chatMessages = useOsStore((state) => state.chatMessages)
   const explorerTree = useOsStore((state) => state.explorerTree)
   const selectedFilePath = useOsStore((state) => state.selectedFilePath)
@@ -66,7 +67,7 @@ export function WindowManager({ onExecuteCommand, onAskChat, onOpenFile }: Windo
               />
             ) : null}
 
-            {window.app === 'analyzer' ? <AnalyzerApp analysis={selectedAnalysis} /> : null}
+            {window.app === 'analyzer' ? <AnalyzerApp analysis={selectedAnalysis} capability={activeCapability} /> : null}
 
             {window.app === 'chat' ? <ChatApp messages={chatMessages} busy={busy} onAsk={onAskChat} /> : null}
 
@@ -191,9 +192,11 @@ function OsWindowFrame({ window, children, onFocus, onClose, onMove, onResize, o
         }}
       >
         <div className="window-controls">
-          <button className="win-btn close" onClick={() => onClose(window.id)} />
-          <button className="win-btn min" onClick={() => onMinimize(window.id)} />
-          <button className="win-btn max" onClick={() => onMaximize(window.id)} />
+          <button className="win-btn close" onClick={() => onClose(window.id)} aria-label="Close window">
+            *
+          </button>
+          <button className="win-btn min" onClick={() => onMinimize(window.id)} aria-label="Minimize window" />
+          <button className="win-btn max" onClick={() => onMaximize(window.id)} aria-label="Maximize window" />
         </div>
         <p>{window.title}</p>
       </header>

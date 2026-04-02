@@ -460,12 +460,17 @@ body {
 }
 
 .win-btn {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   border: 0;
   cursor: pointer;
   padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .win-btn.close { background: #ff5f57; }
