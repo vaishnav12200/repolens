@@ -10,6 +10,24 @@ type TerminalAppProps = {
 }
 
 const autoCompleteCommands = ['help', 'clear', 'analyze', 'run', 'issues', 'stats', 'structure', 'chat', 'compare', 'open explorer', 'open analyzer']
+const urlPattern = /(https?:\/\/[^\s]+)/g
+const exactUrlPattern = /^https?:\/\/[^\s]+$/
+
+function renderTerminalText(text: string) {
+  const parts = text.split(urlPattern)
+
+  return parts.map((part, index) => {
+    if (exactUrlPattern.test(part)) {
+      return (
+        <a key={`url-${part}-${index}`} href={part} target="_blank" rel="noreferrer" className="terminal-link">
+          {part}
+        </a>
+      )
+    }
+
+    return <span key={`txt-${index}`}>{part}</span>
+  })
+}
 
 export function TerminalApp({ lines, busy, onExecute, onHistory, onResetHistoryCursor }: TerminalAppProps) {
   const [command, setCommand] = useState('')
@@ -31,7 +49,7 @@ export function TerminalApp({ lines, busy, onExecute, onHistory, onResetHistoryC
       <div className="terminal-scroll" ref={bodyRef}>
         {lines.map((line) => (
           <p key={line.id} className={`terminal-line terminal-${line.kind}`}>
-            {line.text}
+            {renderTerminalText(line.text)}
           </p>
         ))}
       </div>

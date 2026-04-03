@@ -597,6 +597,11 @@ body {
 .terminal-success { color: #00ff9c; }
 .terminal-error { color: #ff6767; }
 
+.terminal-link {
+  color: #81f5ff;
+  text-decoration: underline;
+}
+
 .terminal-input-row {
   border-top: 1px solid rgba(0, 255, 156, 0.26);
   display: flex;
