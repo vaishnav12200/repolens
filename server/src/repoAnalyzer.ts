@@ -708,31 +708,48 @@ export function compareAnalyses(left: RepoAnalysis, right: RepoAnalysis): Compar
 }
 
 export function answerQuestion(analysis: RepoAnalysis, question: string) {
-  const query = question.toLowerCase()
-  const tokens = query.split(/\s+/).filter(Boolean)
-  const hits = analysis.structure.folderTree
-    .filter((file: string) => tokens.some((token) => token.length > 2 && file.toLowerCase().includes(token)))
-    .slice(0, 8)
+  const query = question.toLowerCase().trim()
+  const tokens = query.split(/\s+/).filter((token) => token.length > 2)
 
-  const isWhatIf = query.includes('what if') || query.includes('if we change') || query.includes('if i change') || query.includes('impact')
-  const isOverview = query.includes('overview') || query.includes('about repo') || query.includes('repo info') || query.includes('explain repo') || query.includes('how it works')
+  const fileHits = analysis.structure.folderTree
+    .filter((file: string) => tokens.some((token) => file.toLowerCase().includes(token)))
+    .slice(0, 10)
 
-  let answer = 'I could not find an exact match. Ask about a module, feature flow, or a proposed change and I can map likely impact and risks.'
+  const architectureText = analysis.structure.architecture.join(' ')
+  const summaryText = analysis.explainIt.summary
+  const businessLogic = analysis.explainIt.businessLogic.slice(0, 3)
+  const entryPoints = analysis.explainIt.entryPoints.slice(0, 5).map((item) => item.path)
+  const stack = analysis.runIt.detectedStack.join(', ') || 'not clearly detected'
 
-  if (isOverview) {
-    answer = `Repository overview:\n- Stack: ${analysis.runIt.detectedStack.join(', ') || 'Unknown'}\n- Core entry points: ${analysis.explainIt.entryPoints.slice(0, 4).map((item) => item.path).join(', ') || 'Not detected'}\n- Key architecture notes: ${analysis.structure.architecture.slice(0, 3).join(' ')}\n- Current risk snapshot: ${analysis.issues.security.length} security findings, ${analysis.issues.smells.length} code smells.`
-  } else if (isWhatIf) {
-    answer = 'Change-impact view: likely affected areas include entry points, related service modules, and tests around touched files. Validate API contracts, run detected tests, and do a staged rollout with smoke checks on critical paths before full release.'
-  } else if (query.includes('auth')) {
-    answer = 'Authentication-related logic usually sits in middleware/guards and auth service modules. Inspect files and routes that reference auth, jwt, token verification, and request guards.'
-  } else if (query.includes('payment')) {
-    answer = 'Payment flow typically starts in API handlers/controllers and then calls provider wrappers. Check billing/checkout service modules and ensure webhook handling is covered by tests.'
-  } else if (query.includes('form')) {
-    answer = 'Form handling generally flows from UI validation to API endpoint validation and then service/business logic. Review both client validation and server-side guards.'
+  const intent = {
+    purpose: /use|purpose|what is this|what does this|about this project|project do/.test(query),
+    how: /how|flow|architecture|works|working|pipeline/.test(query),
+    changeImpact: /what if|if we change|if i change|impact|side effect|break|risk/.test(query),
+    quality: /issue|security|smell|quality|problem|bug/.test(query),
+    testing: /test|coverage|validate|verification/.test(query),
+    run: /run|start|deploy|preview|localhost|install/.test(query),
   }
+
+  let answer = `Here’s what I can infer from this repository. It appears to be built with ${stack}. ${summaryText.slice(0, 260)}${summaryText.length > 260 ? '…' : ''}`
+
+  if (intent.purpose) {
+    answer = `This project’s main purpose is to deliver the capabilities described in its architecture and business logic. In practice, it appears to focus on: ${businessLogic.join(' ')} Core entry points include ${entryPoints.join(', ') || 'the detected bootstrap files'}.`
+  } else if (intent.how) {
+    answer = `At a high level, the system works as follows: ${architectureText || 'the codebase is organized around entry points, service logic, and supporting modules.'} The most relevant starting points are ${entryPoints.join(', ') || 'the detected entry files'}.`
+  } else if (intent.changeImpact) {
+    answer = `If you make that change, the likely impact is across related entry points, service/handler paths, and test coverage areas. I’d validate contracts, run affected tests, and check integration boundaries first. Based on this repo, start impact analysis from: ${entryPoints.join(', ') || 'the primary entry files'}.`
+  } else if (intent.quality) {
+    answer = `Current quality snapshot: ${analysis.issues.security.length} security findings, ${analysis.issues.smells.length} code smells, and ${analysis.issues.hardcodedSecrets.length} potential secret exposures. Prioritize high-severity security findings first, then stabilize core smell hotspots.`
+  } else if (intent.testing) {
+    answer = `Testing snapshot: estimated coverage ${analysis.stats.testCoverageEstimate}%, detected test files ${analysis.testing.testFiles}, suggested commands ${analysis.testing.detectedTestCommands.join(', ')}. For safer changes, start with affected modules and expand to integration scenarios.`
+  } else if (intent.run) {
+    answer = `To run this repository, use install command: ${analysis.runIt.installCommand}. Then start with: ${analysis.runIt.startCommand}. Preview is expected at: ${analysis.runIt.previewUrl}.`
+  }
+
+  const fallbackReferences = entryPoints.length > 0 ? entryPoints : analysis.structure.folderTree.slice(0, 8)
 
   return {
     answer,
-    references: (hits.length > 0 ? hits : analysis.explainIt.entryPoints.map((item) => item.path).slice(0, 8)).map((path: string) => ({ path })),
+    references: (fileHits.length > 0 ? fileHits : fallbackReferences).map((path: string) => ({ path })),
   }
 }
