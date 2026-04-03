@@ -104,7 +104,12 @@ export function AnalyzerApp({ analysis, capability }: AnalyzerAppProps) {
           <h3 className="app-title">Sandbox Run</h3>
           <p className="app-text">Install command: {analysis.runIt.installCommand}</p>
           <p className="app-text">Start command: {analysis.runIt.startCommand}</p>
-          <p className="app-text">Preview URL: {analysis.runIt.previewUrl}</p>
+          <p className="app-text">
+            Preview URL:{' '}
+            <a href={analysis.runIt.previewUrl} target="_blank" rel="noreferrer" className="terminal-link">
+              {analysis.runIt.previewUrl}
+            </a>
+          </p>
         </section>
       </div>
     )
