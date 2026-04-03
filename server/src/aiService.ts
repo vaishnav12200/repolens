@@ -12,7 +12,12 @@ type AiNarrative = {
 }
 
 const model = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini'
-const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
+
+function getClient() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) return null
+  return new OpenAI({ apiKey })
+}
 
 function parseAiJson(raw: string | null | undefined): AiNarrative | null {
   if (!raw) return null
@@ -28,6 +33,7 @@ function parseAiJson(raw: string | null | undefined): AiNarrative | null {
 }
 
 export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
+  const client = getClient()
   if (!client) {
     return { analysis, aiUsed: false as const }
   }
@@ -103,6 +109,7 @@ export async function answerQuestionWithAI(params: {
 }) {
   const { analysis, question, fallback } = params
 
+  const client = getClient()
   if (!client) {
     return { ...fallback(), aiUsed: false as const }
   }
@@ -110,13 +117,12 @@ export async function answerQuestionWithAI(params: {
   try {
     const completion = await client.chat.completions.create({
       model,
-      response_format: { type: 'json_object' },
       temperature: 0.2,
       messages: [
         {
           role: 'system',
           content:
-            'You are a repository engineering advisor, not a casual chatbot. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Return strict JSON with keys answer (string) and references (array of {path,line?}). Keep answers specific and evidence-grounded. If evidence is missing, say assumptions explicitly and avoid fabrication.',
+            'You are a repository engineering assistant. Use a clear, human tone while staying technical and practical. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Prefer returning JSON with keys answer (string) and references (array of {path,line?}). If JSON is not possible, return plain text answer only. Never fabricate repository details.',
         },
         {
           role: 'user',
@@ -143,18 +149,31 @@ export async function answerQuestionWithAI(params: {
       return { ...fallback(), aiUsed: false as const }
     }
 
-    const parsed = JSON.parse(raw) as {
-      answer?: string
-      references?: Array<{ path: string; line?: number }>
+    try {
+      const parsed = JSON.parse(raw) as {
+        answer?: string
+        references?: Array<{ path: string; line?: number }>
+      }
+
+      if (parsed.answer?.trim()) {
+        return {
+          answer: parsed.answer,
+          references: parsed.references?.slice(0, 10) ?? [],
+          aiUsed: true as const,
+        }
+      }
+    } catch {
+      // Fall through to plain-text handling.
     }
 
-    if (!parsed.answer) {
+    const plainAnswer = raw.trim()
+    if (!plainAnswer) {
       return { ...fallback(), aiUsed: false as const }
     }
 
     return {
-      answer: parsed.answer,
-      references: parsed.references?.slice(0, 10) ?? [],
+      answer: plainAnswer,
+      references: analysis.explainIt.entryPoints.slice(0, 6),
       aiUsed: true as const,
     }
   } catch {
