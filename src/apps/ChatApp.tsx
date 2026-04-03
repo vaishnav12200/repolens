@@ -20,10 +20,10 @@ export function ChatApp({ messages, busy, onAsk }: ChatAppProps) {
   return (
     <div className="chat-wrap">
       <div className="chat-scroll">
-        {messages.length === 0 ? <p className="app-muted">Ask: “Explain this repo” or “Where is main logic?”</p> : null}
+        {messages.length === 0 ? <p className="app-muted">Ask for repo insights, architecture details, or what-if change impact (example: “What if we move auth to middleware?”).</p> : null}
         {messages.map((message) => (
           <div key={message.id} className={`chat-line chat-${message.role}`}>
-            <span className="chat-role">{message.role === 'user' ? 'you' : 'ai'}</span>
+            <span className="chat-role">{message.role === 'user' ? 'you' : 'assistant'}</span>
             <p>{message.text}</p>
           </div>
         ))}
@@ -40,10 +40,10 @@ export function ChatApp({ messages, busy, onAsk }: ChatAppProps) {
             }
           }}
           className="os-input"
-          placeholder="Ask about current repository..."
+          placeholder="Ask repo info or what-if change question..."
         />
         <button className="os-btn" onClick={() => void submit()} disabled={busy}>
-          Ask
+          Get Insight
         </button>
       </div>
     </div>

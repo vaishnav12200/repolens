@@ -116,17 +116,23 @@ export async function answerQuestionWithAI(params: {
         {
           role: 'system',
           content:
-            'You answer repository questions with practical engineering detail. Return strict JSON with keys answer (string) and references (array of {path,line?}). Keep answers specific and sufficiently detailed; do not invent files or behavior not present in provided data.',
+            'You are a repository engineering advisor, not a casual chatbot. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Return strict JSON with keys answer (string) and references (array of {path,line?}). Keep answers specific and evidence-grounded. If evidence is missing, say assumptions explicitly and avoid fabrication.',
         },
         {
           role: 'user',
           content: JSON.stringify({
             question,
             repoUrl: analysis.repoUrl,
+            summary: analysis.explainIt.summary,
+            stack: analysis.explainIt.stackBreakdown,
+            businessLogic: analysis.explainIt.businessLogic,
             entryPoints: analysis.explainIt.entryPoints,
             architecture: analysis.structure.architecture,
             topFiles: analysis.structure.folderTree.slice(0, 80),
             issues: analysis.issues,
+            stats: analysis.stats,
+            testing: analysis.testing,
+            run: analysis.runIt,
           }),
         },
       ],

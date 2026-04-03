@@ -709,21 +709,30 @@ export function compareAnalyses(left: RepoAnalysis, right: RepoAnalysis): Compar
 
 export function answerQuestion(analysis: RepoAnalysis, question: string) {
   const query = question.toLowerCase()
+  const tokens = query.split(/\s+/).filter(Boolean)
   const hits = analysis.structure.folderTree
-    .filter((file: string) => file.toLowerCase().includes(query.split(' ')[0]))
-    .slice(0, 6)
+    .filter((file: string) => tokens.some((token) => token.length > 2 && file.toLowerCase().includes(token)))
+    .slice(0, 8)
 
-  let answer = 'I could not find an exact match, but start with the entry points and service folders.'
-  if (query.includes('auth')) {
-    answer = 'Authentication logic is usually found in middleware, guards, or auth service files. Check files containing auth, jwt, and middleware.'
+  const isWhatIf = query.includes('what if') || query.includes('if we change') || query.includes('if i change') || query.includes('impact')
+  const isOverview = query.includes('overview') || query.includes('about repo') || query.includes('repo info') || query.includes('explain repo') || query.includes('how it works')
+
+  let answer = 'I could not find an exact match. Ask about a module, feature flow, or a proposed change and I can map likely impact and risks.'
+
+  if (isOverview) {
+    answer = `Repository overview:\n- Stack: ${analysis.runIt.detectedStack.join(', ') || 'Unknown'}\n- Core entry points: ${analysis.explainIt.entryPoints.slice(0, 4).map((item) => item.path).join(', ') || 'Not detected'}\n- Key architecture notes: ${analysis.structure.architecture.slice(0, 3).join(' ')}\n- Current risk snapshot: ${analysis.issues.security.length} security findings, ${analysis.issues.smells.length} code smells.`
+  } else if (isWhatIf) {
+    answer = 'Change-impact view: likely affected areas include entry points, related service modules, and tests around touched files. Validate API contracts, run detected tests, and do a staged rollout with smoke checks on critical paths before full release.'
+  } else if (query.includes('auth')) {
+    answer = 'Authentication-related logic usually sits in middleware/guards and auth service modules. Inspect files and routes that reference auth, jwt, token verification, and request guards.'
   } else if (query.includes('payment')) {
-    answer = 'Payment flow generally starts in API handlers and then calls payment provider SDK wrappers. Look for files referencing stripe, billing, or checkout.'
+    answer = 'Payment flow typically starts in API handlers/controllers and then calls provider wrappers. Check billing/checkout service modules and ensure webhook handling is covered by tests.'
   } else if (query.includes('form')) {
-    answer = 'Form submissions typically pass from UI handlers to API endpoints, then validation/service layers.'
+    answer = 'Form handling generally flows from UI validation to API endpoint validation and then service/business logic. Review both client validation and server-side guards.'
   }
 
   return {
     answer,
-    references: hits.map((path: string) => ({ path })),
+    references: (hits.length > 0 ? hits : analysis.explainIt.entryPoints.map((item) => item.path).slice(0, 8)).map((path: string) => ({ path })),
   }
 }
