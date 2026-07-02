@@ -34,7 +34,7 @@ Instead of a traditional webpage, RepoLens OS provides a Linux-inspired desktop 
 - Node.js + Express + TypeScript
 - Git shallow cloning (`--depth 1`) for analysis inputs
 - Heuristic analyzer for stack, structure, issues, and repo health metrics
-- Optional OpenAI augmentation for richer summary/chat output
+- Optional Groq augmentation for richer summary/chat output
 
 ---
 
@@ -82,8 +82,8 @@ Notes:
 
 Optional environment variables:
 
-- `OPENAI_API_KEY` — enables AI-enhanced summary/chat responses.
-- `OPENAI_MODEL` — defaults to `gpt-4.1-mini`.
+- `GROQ_API_KEY` — enables AI-enhanced summary/chat responses.
+- `GROQ_MODEL` — defaults to `llama-3.3-70b-versatile`.
 - `PORT` — backend API port (default `8787`).
 - `VITE_API_BASE_URL` — frontend API base URL for production (set to your Railway backend URL).
 
@@ -127,8 +127,8 @@ git push origin main
 
 In Railway service settings, add:
 
-- `OPENAI_API_KEY=<your_openai_key>`
-- `OPENAI_MODEL=gpt-4.1-mini`
+- `GROQ_API_KEY=<your_groq_key>`
+- `GROQ_MODEL=llama-3.3-70b-versatile`
 
 Do not set `PORT` manually on Railway; Railway injects it.
 
@@ -185,12 +185,12 @@ firebase use <your-existing-project-id>
 npm run deploy:api
 ```
 
-Set API runtime secrets/env (including OpenAI key):
+Set API runtime secrets/env (including Groq key):
 
 ```bash
 gcloud run services update repolens-api \
 	--region us-central1 \
-	--set-env-vars OPENAI_API_KEY=<your_openai_key>,OPENAI_MODEL=gpt-4.1-mini
+	--set-env-vars GROQ_API_KEY=<your_groq_key>,GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
 ### 4) Deploy frontend Hosting
@@ -288,7 +288,7 @@ server/src/
 	 - architecture cues,
 	 - issues and code smells,
 	 - statistics and repo score.
-4. Optionally enrich summary and chat responses using OpenAI.
+4. Optionally enrich summary and chat responses using Groq.
 5. Cache analysis in memory for low-latency follow-up commands.
 
 ---
@@ -337,7 +337,7 @@ Use caution when running untrusted repositories; execution happens locally.
 
 ### Chat is generic
 
-- Provide `OPENAI_API_KEY` for stronger AI responses.
+- Provide `GROQ_API_KEY` for stronger AI responses.
 - Without API key, fallback heuristic responder is used.
 
 ---
