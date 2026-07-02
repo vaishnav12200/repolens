@@ -126,6 +126,25 @@ export function Desktop() {
     }
   }
 
+  const askChat = async (question: string) => {
+    const activeRepo = focusedAnalysis?.repoUrl ?? repoUrl
+    if (!activeRepo.trim()) {
+      throw new Error('Set a repository URL before asking chat.')
+    }
+
+    pushChatMessage({ id: `chat-u-${Date.now()}`, role: 'user', text: question })
+    openApp('chat')
+    await streamStatus(['collecting repository context...', 'running ai assistant...'])
+
+    const analysis = await ensureAnalysis(activeRepo)
+    const answer = await api.chat(analysis.id, question)
+
+    pushChatMessage({ id: `chat-a-${Date.now()}`, role: 'assistant', text: answer.answer })
+    setActiveCapability('chat')
+    openApp('chat')
+    await streamTyped(`ai: ${answer.answer}`, 'success')
+  }
+
   const executeCommand = async (raw: string) => {
     pushCommandHistory(raw)
     pushLine(`repolens@os:~$ ${raw}`, 'command')
@@ -208,14 +227,7 @@ export function Desktop() {
           return
         }
 
-        const activeRepo = focusedAnalysis?.repoUrl ?? repoUrl
-        const analysis = await ensureAnalysis(activeRepo)
-        pushChatMessage({ id: `chat-u-${Date.now()}`, role: 'user', text: question })
-        await streamStatus(['collecting repository context...', 'running ai assistant...'])
-        const answer = await api.chat(analysis.id, question)
-        pushChatMessage({ id: `chat-a-${Date.now()}`, role: 'assistant', text: answer.answer })
-        await streamTyped(`ai: ${answer.answer}`, 'success')
-        openApp('chat')
+        await askChat(question)
         return
       }
 
@@ -265,7 +277,20 @@ export function Desktop() {
   }
 
   const handleAskChat = async (question: string) => {
-    await executeCommand(`chat ${question}`)
+    pushCommandHistory(`chat ${question}`)
+    pushLine(`repolens@os:~$ chat ${question}`, 'command')
+
+    setBusy(true)
+    try {
+      await askChat(question)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error'
+      pushChatMessage({ id: `chat-e-${Date.now()}`, role: 'assistant', text: `I could not answer that: ${message}` })
+      pushLine(`error: ${message}`, 'error')
+      openApp('chat')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const handleOpenFile = async (path: string) => {
