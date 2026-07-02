@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import Groq from 'groq-sdk'
 import type { RepoAnalysis } from './types.js'
 
 type AiNarrative = {
@@ -12,12 +12,10 @@ type AiNarrative = {
 }
 
 const model = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile'
-const groqBaseUrl = 'https://api.groq.com/openai/v1'
-
 function getClient() {
   const apiKey = process.env.GROQ_API_KEY?.trim()
   if (!apiKey) return null
-  return new OpenAI({ apiKey, baseURL: groqBaseUrl })
+  return new Groq({ apiKey })
 }
 
 function parseAiJson(raw: string | null | undefined): AiNarrative | null {
