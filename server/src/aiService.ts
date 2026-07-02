@@ -11,25 +11,48 @@ type AiNarrative = {
   onboarding: string
 }
 
-const model = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini'
+const model = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile'
+const groqBaseUrl = 'https://api.groq.com/openai/v1'
 
 function getClient() {
-  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  const apiKey = process.env.GROQ_API_KEY?.trim()
   if (!apiKey) return null
-  return new OpenAI({ apiKey })
+  return new OpenAI({ apiKey, baseURL: groqBaseUrl })
 }
 
 function parseAiJson(raw: string | null | undefined): AiNarrative | null {
   if (!raw) return null
+
+  const candidates = [raw.trim()]
+
+  const fencedMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fencedMatch?.[1]) {
+    candidates.push(fencedMatch[1].trim())
+  }
+
+  const firstBrace = raw.indexOf('{')
+  const lastBrace = raw.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    candidates.push(raw.slice(firstBrace, lastBrace + 1).trim())
+  }
+
   try {
-    const parsed = JSON.parse(raw) as AiNarrative
-    if (!parsed.summary || !Array.isArray(parsed.architectureExplanation) || !Array.isArray(parsed.learningSteps)) {
-      return null
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate) as AiNarrative
+        if (!parsed.summary || !Array.isArray(parsed.architectureExplanation) || !Array.isArray(parsed.learningSteps)) {
+          continue
+        }
+        return parsed
+      } catch {
+        continue
+      }
     }
-    return parsed
   } catch {
     return null
   }
+
+  return null
 }
 
 export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
@@ -50,13 +73,12 @@ export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
   try {
     const completion = await client.chat.completions.create({
       model,
-      response_format: { type: 'json_object' },
       temperature: 0.2,
       messages: [
         {
           role: 'system',
           content:
-            'You are a senior codebase analyst. Return strict JSON with keys: summary, architectureExplanation, learningSteps, glossary, readme, apiOverview, onboarding. Be detailed, factual, and grounded only in provided evidence. summary should be multi-line and comprehensive.',
+            'You are a senior codebase analyst. Return strict JSON with keys: summary, architectureExplanation, learningSteps, glossary, readme, apiOverview, onboarding. Be detailed, factual, and grounded only in provided evidence. summary should be multi-line and comprehensive. Do not wrap the JSON in markdown fences or extra prose.',
         },
         {
           role: 'user',
@@ -122,7 +144,7 @@ export async function answerQuestionWithAI(params: {
         {
           role: 'system',
           content:
-            'You are a repository engineering assistant. Use a clear, human tone while staying technical and practical. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Prefer returning JSON with keys answer (string) and references (array of {path,line?}). If JSON is not possible, return plain text answer only. Never fabricate repository details.',
+            'You are a repository engineering assistant. Use a clear, human tone while staying technical and practical. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Prefer returning JSON with keys answer (string) and references (array of {path,line?}). If JSON is not possible, return plain text answer only. Never fabricate repository details. Do not wrap JSON in markdown fences or extra prose.',
         },
         {
           role: 'user',
