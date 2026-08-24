@@ -135,20 +135,17 @@ export function createApiRouter() {
 
   router.post('/chat', async (req, res) => {
     const payload = req.body as ChatRequest
-    if (!payload?.analysisId || !payload?.question?.trim()) {
-      return res.status(400).json({ error: 'analysisId and question are required' })
+    if (!payload?.question?.trim()) {
+      return res.status(400).json({ error: 'question is required' })
     }
 
-    const analysis = analysesById.get(payload.analysisId)
-    if (!analysis) {
-      return res.status(404).json({ error: 'analysisId not found' })
-    }
+    const analysis = payload.analysisId ? analysesById.get(payload.analysisId) : undefined
 
     const response = await answerQuestionWithAI({
       analysis,
       question: payload.question,
       history: payload.history,
-      fallback: () => answerQuestion(analysis, payload.question),
+      fallback: analysis ? () => answerQuestion(analysis, payload.question) : undefined,
     })
 
     return res.json(response)
@@ -359,14 +356,10 @@ export function createApiRouter() {
           return res.status(400).json({ error: 'chat requires a question' })
         }
 
-        if (!analysis) {
-          return res.status(400).json({ error: 'chat requires analysisId or repoUrl that has already been analyzed' })
-        }
-
         const chat = await answerQuestionWithAI({
           analysis,
           question,
-          fallback: () => answerQuestion(analysis, question),
+          fallback: analysis ? () => answerQuestion(analysis, question) : undefined,
         })
 
         response.capability = 'chat'

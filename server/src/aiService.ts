@@ -198,20 +198,24 @@ export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
 }
 
 export async function answerQuestionWithAI(params: {
-  analysis: AnalysisWithRepoDir
+  analysis?: AnalysisWithRepoDir
   question: string
   history?: Array<{ role: 'user' | 'assistant'; text: string }>
-  fallback: () => { answer: string; references: Array<{ path: string; line?: number }> }
+  fallback?: () => { answer: string; references: Array<{ path: string; line?: number }> }
 }) {
   const { analysis, question, history = [], fallback } = params
+  const unavailableResponse = () => fallback?.() ?? {
+    answer: 'The AI service is unavailable. Check that GROQ_API_KEY is configured and restart the backend.',
+    references: [],
+  }
 
   const client = getClient()
   if (!client) {
-    return { ...fallback(), aiUsed: false as const }
+    return { ...unavailableResponse(), aiUsed: false as const }
   }
 
   try {
-    const sourceFiles = await buildRepositoryContext(analysis, question)
+    const sourceFiles = analysis ? await buildRepositoryContext(analysis, question) : []
     const completion = await client.chat.completions.create({
       model: getModel(),
       temperature: 0.3,
@@ -220,7 +224,7 @@ export async function answerQuestionWithAI(params: {
         {
           role: 'system',
           content:
-            'You are a helpful AI assistant with access to a repository snapshot. Answer ordinary questions naturally and clearly. When the question is about the repository, base the answer only on the supplied repository facts and source excerpts. Explain uncertainty rather than inventing behavior. For change-impact questions, cover affected areas, risks, and a safe validation plan. Return valid JSON only: {"answer": string, "references": [{"path": string, "line": number?}]}. References must name only supplied source files and should be omitted for general questions.',
+            'You are a helpful, conversational AI assistant. Answer the user’s question directly, clearly, and naturally. A repository snapshot may be supplied; only use it when the user asks about that repository or its code. When discussing supplied repository code, rely only on its facts and source excerpts, explain uncertainty rather than inventing behavior, and cite only supplied source files. For change-impact questions, cover affected areas, risks, and a safe validation plan. Return valid JSON only: {"answer": string, "references": [{"path": string, "line": number?}]}. Omit references for general questions.',
         },
         ...history
           .filter((message) => (message.role === 'user' || message.role === 'assistant') && Boolean(message.text?.trim()))
@@ -230,7 +234,7 @@ export async function answerQuestionWithAI(params: {
           role: 'user',
           content: JSON.stringify({
             question,
-            repository: {
+            repository: analysis ? {
               repoUrl: analysis.repoUrl,
               summary: analysis.explainIt.summary,
               stack: analysis.explainIt.stackBreakdown,
@@ -243,7 +247,7 @@ export async function answerQuestionWithAI(params: {
               testing: analysis.testing,
               run: analysis.runIt,
               sourceFiles,
-            },
+            } : undefined,
           }),
         },
       ],
@@ -251,7 +255,7 @@ export async function answerQuestionWithAI(params: {
 
     const raw = completion.choices[0]?.message?.content
     if (!raw) {
-      return { ...fallback(), aiUsed: false as const }
+      return { ...unavailableResponse(), aiUsed: false as const }
     }
 
     try {
@@ -274,15 +278,15 @@ export async function answerQuestionWithAI(params: {
 
     const plainAnswer = raw.trim()
     if (!plainAnswer) {
-      return { ...fallback(), aiUsed: false as const }
+      return { ...unavailableResponse(), aiUsed: false as const }
     }
 
     return {
       answer: plainAnswer,
-      references: analysis.explainIt.entryPoints.slice(0, 6),
+      references: analysis?.explainIt.entryPoints.slice(0, 6) ?? [],
       aiUsed: true as const,
     }
   } catch {
-    return { ...fallback(), aiUsed: false as const }
+    return { ...unavailableResponse(), aiUsed: false as const }
   }
 }

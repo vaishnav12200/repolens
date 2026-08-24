@@ -127,18 +127,14 @@ export function Desktop() {
   }
 
   const askChat = async (question: string) => {
-    const activeRepo = focusedAnalysis?.repoUrl ?? repoUrl
-    if (!activeRepo.trim()) {
-      throw new Error('Set a repository URL before asking chat.')
-    }
-
     const history = useOsStore.getState().chatMessages.slice(-12).map(({ role, text }) => ({ role, text }))
     pushChatMessage({ id: `chat-u-${Date.now()}`, role: 'user', text: question })
     openApp('chat')
-    await streamStatus(['collecting repository context...', 'running ai assistant...'])
+    await streamStatus(focusedAnalysis ? ['collecting repository context...', 'running ai assistant...'] : ['running ai assistant...'])
 
-    const analysis = await ensureAnalysis(activeRepo)
-    const answer = await api.chat(analysis.id, question, history)
+    // General questions should answer immediately. Repository context is attached only
+    // after the user has explicitly analyzed a repository in this server session.
+    const answer = await api.chat(focusedAnalysis?.id, question, history)
 
     pushChatMessage({ id: `chat-a-${Date.now()}`, role: 'assistant', text: answer.answer })
     setActiveCapability('chat')

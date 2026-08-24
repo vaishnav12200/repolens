@@ -21,7 +21,7 @@ export function ChatApp({ messages, busy, onAsk, onClear }: ChatAppProps) {
   return (
     <div className="chat-wrap">
       <div className="chat-scroll">
-        {messages.length === 0 ? <p className="app-muted">Ask for repo insights, architecture details, or what-if change impact (example: “What if we move auth to middleware?”).</p> : null}
+        {messages.length === 0 ? <p className="app-muted">Ask anything. Analyze a repository first when you want answers grounded in its code.</p> : null}
         {messages.map((message) => (
           <div key={message.id} className={`chat-line chat-${message.role}`}>
             <span className="chat-role">{message.role === 'user' ? 'you' : 'assistant'}</span>
@@ -41,7 +41,7 @@ export function ChatApp({ messages, busy, onAsk, onClear }: ChatAppProps) {
             }
           }}
           className="os-input"
-          placeholder="Ask repo info or what-if change question..."
+          placeholder="Ask anything, or ask about an analyzed repository..."
         />
         <button className="os-btn" onClick={() => void submit()} disabled={busy}>
           Get Insight
