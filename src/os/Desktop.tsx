@@ -33,6 +33,10 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function needsRepositoryContext(question: string) {
+  return /\b(use\s*case|purpose|what\s+(?:does|is)\s+(?:this|the|my|our)|what\s+(?:is|are)\s+(?:this|the|my|our)\s+(?:project|app|application|website|site)|(?:this|the|my|our)\s+(?:repo|repository|project|app|application|website|site|codebase)|how\s+does\s+(?:this|the|my|our)|(?:project|app|website)\s+(?:do|work|for)|features?|architecture|codebase|folder|file|component|endpoint)\b/i.test(question)
+}
+
 export function Desktop() {
   const [timeLabel, setTimeLabel] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
 
@@ -128,13 +132,16 @@ export function Desktop() {
 
   const askChat = async (question: string) => {
     const history = useOsStore.getState().chatMessages.slice(-12).map(({ role, text }) => ({ role, text }))
+    const useRepositoryContext = needsRepositoryContext(question)
+    const activeRepo = focusedAnalysis?.repoUrl ?? repoUrl
     pushChatMessage({ id: `chat-u-${Date.now()}`, role: 'user', text: question })
     openApp('chat')
-    await streamStatus(focusedAnalysis ? ['collecting repository context...', 'running ai assistant...'] : ['running ai assistant...'])
+    await streamStatus(useRepositoryContext ? ['analyzing repository purpose and behavior...', 'running ai assistant...'] : ['running ai assistant...'])
 
-    // General questions should answer immediately. Repository context is attached only
-    // after the user has explicitly analyzed a repository in this server session.
-    const answer = await api.chat(focusedAnalysis?.id, question, history)
+    // General questions answer immediately. Purpose, use-case, and code questions
+    // automatically analyze the selected repository before asking the AI.
+    const analysis = useRepositoryContext && activeRepo.trim() ? await ensureAnalysis(activeRepo) : focusedAnalysis
+    const answer = await api.chat(analysis?.id, question, history, useRepositoryContext ? activeRepo : undefined)
 
     pushChatMessage({ id: `chat-a-${Date.now()}`, role: 'assistant', text: answer.answer })
     setActiveCapability('chat')

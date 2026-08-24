@@ -70,6 +70,7 @@ export type RepoAnalysis = {
 
 export type ChatRequest = {
   analysisId?: string
+  repoUrl?: string
   question: string
   history?: Array<{ role: 'user' | 'assistant'; text: string }>
 }

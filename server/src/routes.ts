@@ -139,16 +139,27 @@ export function createApiRouter() {
       return res.status(400).json({ error: 'question is required' })
     }
 
-    const analysis = payload.analysisId ? analysesById.get(payload.analysisId) : undefined
+    try {
+      let analysis = payload.analysisId ? analysesById.get(payload.analysisId) : undefined
+      const repoUrl = String(payload.repoUrl ?? '').trim()
+      if (!analysis && repoUrl && isHttpRepoUrl(repoUrl)) {
+        analysis = await ensureAnalysis(repoUrl)
+      }
 
-    const response = await answerQuestionWithAI({
-      analysis,
-      question: payload.question,
-      history: payload.history,
-      fallback: analysis ? () => answerQuestion(analysis, payload.question) : undefined,
-    })
+      const response = await answerQuestionWithAI({
+        analysis,
+        question: payload.question,
+        history: payload.history,
+        fallback: analysis ? () => answerQuestion(analysis, payload.question) : undefined,
+      })
 
-    return res.json(response)
+      return res.json(response)
+    } catch (error) {
+      return res.status(500).json({
+        error: 'Failed to prepare repository context for chat',
+        detail: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
   })
 
   router.post('/compare', async (req, res) => {

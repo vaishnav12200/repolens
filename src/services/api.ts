@@ -30,8 +30,12 @@ async function postJson<T>(url: string, body: Record<string, unknown>) {
 export const api = {
   analyze: (repoUrl: string) => postJson<Analysis>(apiUrl('/api/analyze'), { repoUrl }),
   run: (repoUrl: string) => postJson<Analysis>(apiUrl('/api/run'), { repoUrl }),
-  chat: (analysisId: string | undefined, question: string, history: Array<{ role: 'user' | 'assistant'; text: string }> = []) =>
-    postJson<ChatResponse>(apiUrl('/api/chat'), { analysisId, question, history }),
+  chat: (
+    analysisId: string | undefined,
+    question: string,
+    history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
+    repoUrl?: string,
+  ) => postJson<ChatResponse>(apiUrl('/api/chat'), { analysisId, question, history, repoUrl }),
   compare: (leftUrl: string, rightUrl: string) => postJson<CompareResult>(apiUrl('/api/compare'), { leftUrl, rightUrl }),
   testRun: (repoUrl: string) => postJson<TestResult>(apiUrl('/api/test-run'), { repoUrl }),
   explorerTree: (repoUrl: string) => postJson<ExplorerTreeResponse>(apiUrl('/api/explorer/tree'), { repoUrl }),
