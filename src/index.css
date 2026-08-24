@@ -753,6 +753,17 @@ body {
   cursor: pointer;
 }
 
+.os-btn-muted {
+  border-color: rgba(129, 245, 255, 0.35);
+  background: rgba(129, 245, 255, 0.08);
+  color: #81f5ff;
+}
+
+.os-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .explorer-grid {
   height: 100%;
   display: grid;

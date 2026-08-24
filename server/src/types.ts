@@ -71,6 +71,7 @@ export type RepoAnalysis = {
 export type ChatRequest = {
   analysisId: string
   question: string
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>
 }
 
 export type CompareResult = {

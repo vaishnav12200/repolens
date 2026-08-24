@@ -35,6 +35,7 @@ export function WindowManager({ onExecuteCommand, onAskChat, onOpenFile }: Windo
   const toggleMaximize = useOsStore((state) => state.toggleMaximize)
   const moveCommandCursor = useOsStore((state) => state.moveCommandCursor)
   const resetCommandCursor = useOsStore((state) => state.resetCommandCursor)
+  const clearChatMessages = useOsStore((state) => state.clearChatMessages)
 
   const selectedAnalysis = useMemo(() => {
     if (!currentAnalysisId) return null
@@ -69,7 +70,7 @@ export function WindowManager({ onExecuteCommand, onAskChat, onOpenFile }: Windo
 
             {window.app === 'analyzer' ? <AnalyzerApp analysis={selectedAnalysis} capability={activeCapability} /> : null}
 
-            {window.app === 'chat' ? <ChatApp messages={chatMessages} busy={busy} onAsk={onAskChat} /> : null}
+            {window.app === 'chat' ? <ChatApp messages={chatMessages} busy={busy} onAsk={onAskChat} onClear={clearChatMessages} /> : null}
 
             {window.app === 'explorer' ? (
               <ExplorerApp

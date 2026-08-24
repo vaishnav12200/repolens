@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, normalize, resolve, sep } from 'node:path'
-import { enhanceAnalysisWithAI, answerQuestionWithAI } from './aiService.js'
+import { enhanceAnalysisWithAI, answerQuestionWithAI, getAiStatus } from './aiService.js'
 import { analyzeRepo, answerQuestion, compareAnalyses } from './repoAnalyzer.js'
 import { listRunningRepoSessions, startRepo, stopRepoRunByDir } from './runRepo.js'
 import type { ChatRequest, CommandRequest, CommandResponse, RepoAnalysis } from './types.js'
@@ -75,6 +75,7 @@ export function createApiRouter() {
       service: 'repolens-api',
       runningSessions: listRunningRepoSessions().length,
       analysesCached: analysesById.size,
+      ai: getAiStatus(),
       timestamp: new Date().toISOString(),
     })
   })
@@ -146,6 +147,7 @@ export function createApiRouter() {
     const response = await answerQuestionWithAI({
       analysis,
       question: payload.question,
+      history: payload.history,
       fallback: () => answerQuestion(analysis, payload.question),
     })
 

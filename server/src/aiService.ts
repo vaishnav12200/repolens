@@ -1,4 +1,6 @@
 import Groq from 'groq-sdk'
+import { readFile } from 'node:fs/promises'
+import { extname, join, resolve, sep } from 'node:path'
 import type { RepoAnalysis } from './types.js'
 
 type AiNarrative = {
@@ -11,11 +13,84 @@ type AiNarrative = {
   onboarding: string
 }
 
-const model = process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile'
+const DEFAULT_MODEL = 'openai/gpt-oss-120b'
+const DEPRECATED_MODELS: Record<string, string> = {
+  'llama-3.3-70b-versatile': DEFAULT_MODEL,
+  'llama-3.1-8b-instant': 'openai/gpt-oss-20b',
+}
+
+const SOURCE_EXTENSIONS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.md', '.py', '.go', '.rs', '.java', '.rb', '.php', '.cs', '.yml', '.yaml', '.sql', '.html', '.css', '.scss',
+])
+
+type AnalysisWithRepoDir = RepoAnalysis & { _repoDir?: string }
+
+function getModel() {
+  const configured = process.env.GROQ_MODEL?.trim()
+  return DEPRECATED_MODELS[configured ?? ''] ?? configured ?? DEFAULT_MODEL
+}
+
+export function getAiStatus() {
+  const configuredModel = process.env.GROQ_MODEL?.trim()
+  return {
+    configured: Boolean(process.env.GROQ_API_KEY?.trim()),
+    model: getModel(),
+    migratedFromDeprecatedModel: configuredModel && DEPRECATED_MODELS[configuredModel] ? configuredModel : undefined,
+  }
+}
+
 function getClient() {
   const apiKey = process.env.GROQ_API_KEY?.trim()
   if (!apiKey) return null
   return new Groq({ apiKey })
+}
+
+function questionTokens(question: string) {
+  return new Set(
+    question
+      .toLowerCase()
+      .split(/[^a-z0-9_/-]+/)
+      .filter((token) => token.length > 2),
+  )
+}
+
+function scoreFile(path: string, tokens: Set<string>, entryPoints: string[]) {
+  const lower = path.toLowerCase()
+  let score = entryPoints.includes(path) ? 8 : 0
+  if (/^(readme|package\.json|dockerfile|compose|vite\.config|next\.config|tsconfig)/i.test(path)) score += 4
+  for (const token of tokens) {
+    if (lower.includes(token)) score += 5
+  }
+  if (/\/(service|controller|route|api|auth|store|component|model|handler)/i.test(path)) score += 1
+  return score
+}
+
+async function buildRepositoryContext(analysis: AnalysisWithRepoDir, question: string) {
+  if (!analysis._repoDir) return []
+
+  const root = resolve(analysis._repoDir)
+  const tokens = questionTokens(question)
+  const entryPoints = analysis.explainIt.entryPoints.map((item) => item.path)
+  const selected = analysis.structure.folderTree
+    .filter((path) => SOURCE_EXTENSIONS.has(extname(path).toLowerCase()) || /(^|\/)README(?:\.[^.]+)?$/i.test(path) || /(^|\/)Dockerfile$/i.test(path))
+    .sort((left, right) => scoreFile(right, tokens, entryPoints) - scoreFile(left, tokens, entryPoints) || left.localeCompare(right))
+    .slice(0, 8)
+
+  const files = await Promise.all(
+    selected.map(async (path) => {
+      const absolutePath = resolve(root, path)
+      if (!absolutePath.startsWith(`${root}${sep}`)) return null
+
+      try {
+        const content = await readFile(join(root, path), 'utf-8')
+        return { path, content: content.slice(0, 6000) }
+      } catch {
+        return null
+      }
+    }),
+  )
+
+  return files.filter((file): file is { path: string; content: string } => Boolean(file))
 }
 
 function parseAiJson(raw: string | null | undefined): AiNarrative | null {
@@ -70,7 +145,7 @@ export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
 
   try {
     const completion = await client.chat.completions.create({
-      model,
+      model: getModel(),
       temperature: 0.2,
       messages: [
         {
@@ -123,11 +198,12 @@ export async function enhanceAnalysisWithAI(analysis: RepoAnalysis) {
 }
 
 export async function answerQuestionWithAI(params: {
-  analysis: RepoAnalysis
+  analysis: AnalysisWithRepoDir
   question: string
+  history?: Array<{ role: 'user' | 'assistant'; text: string }>
   fallback: () => { answer: string; references: Array<{ path: string; line?: number }> }
 }) {
-  const { analysis, question, fallback } = params
+  const { analysis, question, history = [], fallback } = params
 
   const client = getClient()
   if (!client) {
@@ -135,30 +211,39 @@ export async function answerQuestionWithAI(params: {
   }
 
   try {
+    const sourceFiles = await buildRepositoryContext(analysis, question)
     const completion = await client.chat.completions.create({
-      model,
-      temperature: 0.2,
+      model: getModel(),
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
           content:
-            'You are a repository engineering assistant. Use a clear, human tone while staying technical and practical. Answer with concrete repo insights, architecture reasoning, and change-impact analysis. If asked "what if we change X", explain likely impact, affected areas, risks, and a safe rollout/testing approach. Prefer returning JSON with keys answer (string) and references (array of {path,line?}). If JSON is not possible, return plain text answer only. Never fabricate repository details. Do not wrap JSON in markdown fences or extra prose.',
+            'You are a helpful AI assistant with access to a repository snapshot. Answer ordinary questions naturally and clearly. When the question is about the repository, base the answer only on the supplied repository facts and source excerpts. Explain uncertainty rather than inventing behavior. For change-impact questions, cover affected areas, risks, and a safe validation plan. Return valid JSON only: {"answer": string, "references": [{"path": string, "line": number?}]}. References must name only supplied source files and should be omitted for general questions.',
         },
+        ...history
+          .filter((message) => (message.role === 'user' || message.role === 'assistant') && Boolean(message.text?.trim()))
+          .slice(-12)
+          .map((message) => ({ role: message.role, content: message.text.slice(0, 2000) })),
         {
           role: 'user',
           content: JSON.stringify({
             question,
-            repoUrl: analysis.repoUrl,
-            summary: analysis.explainIt.summary,
-            stack: analysis.explainIt.stackBreakdown,
-            businessLogic: analysis.explainIt.businessLogic,
-            entryPoints: analysis.explainIt.entryPoints,
-            architecture: analysis.structure.architecture,
-            topFiles: analysis.structure.folderTree.slice(0, 80),
-            issues: analysis.issues,
-            stats: analysis.stats,
-            testing: analysis.testing,
-            run: analysis.runIt,
+            repository: {
+              repoUrl: analysis.repoUrl,
+              summary: analysis.explainIt.summary,
+              stack: analysis.explainIt.stackBreakdown,
+              businessLogic: analysis.explainIt.businessLogic,
+              entryPoints: analysis.explainIt.entryPoints,
+              architecture: analysis.structure.architecture,
+              topFiles: analysis.structure.folderTree.slice(0, 120),
+              issues: analysis.issues,
+              stats: analysis.stats,
+              testing: analysis.testing,
+              run: analysis.runIt,
+              sourceFiles,
+            },
           }),
         },
       ],
@@ -176,9 +261,10 @@ export async function answerQuestionWithAI(params: {
       }
 
       if (parsed.answer?.trim()) {
+        const allowedReferences = new Set(sourceFiles.map((file) => file.path))
         return {
           answer: parsed.answer,
-          references: parsed.references?.slice(0, 10) ?? [],
+          references: (parsed.references ?? []).filter((reference) => allowedReferences.has(reference.path)).slice(0, 10),
           aiUsed: true as const,
         }
       }

@@ -83,7 +83,7 @@ Notes:
 Optional environment variables:
 
 - `GROQ_API_KEY` — enables AI-enhanced summary/chat responses.
-- `GROQ_MODEL` — defaults to `llama-3.3-70b-versatile`.
+- `GROQ_MODEL` — defaults to `openai/gpt-oss-120b`. Older Llama defaults are automatically migrated.
 - `PORT` — backend API port (default `8787`).
 - `VITE_API_BASE_URL` — frontend API base URL for production (set to your Railway backend URL).
 
@@ -128,7 +128,7 @@ git push origin main
 In Railway service settings, add:
 
 - `GROQ_API_KEY=<your_groq_key>`
-- `GROQ_MODEL=llama-3.3-70b-versatile`
+- `GROQ_MODEL=openai/gpt-oss-120b`
 
 Do not set `PORT` manually on Railway; Railway injects it.
 
@@ -190,7 +190,7 @@ Set API runtime secrets/env (including Groq key):
 ```bash
 gcloud run services update repolens-api \
 	--region us-central1 \
-	--set-env-vars GROQ_API_KEY=<your_groq_key>,GROQ_MODEL=llama-3.3-70b-versatile
+	--set-env-vars GROQ_API_KEY=<your_groq_key>,GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 ### 4) Deploy frontend Hosting

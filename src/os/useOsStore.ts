@@ -41,6 +41,7 @@ type OsState = {
   moveCommandCursor: (direction: 'up' | 'down') => string
   resetCommandCursor: () => void
   pushChatMessage: (message: ChatMessage) => void
+  clearChatMessages: () => void
   setExplorerTree: (tree: string[]) => void
   setSelectedFile: (path: string | null) => void
   cacheFile: (path: string, content: string) => void
@@ -63,7 +64,8 @@ function persistSnapshot(state: Pick<OsState, 'repoUrl' | 'activeCapability' | '
     currentAnalysisId: state.currentAnalysisId,
     terminalLines: state.terminalLines.slice(-300),
     commandHistory: state.commandHistory.slice(0, 120),
-    chatMessages: state.chatMessages.slice(-100),
+    // Keep chat conversations out of local storage so every reload starts clean.
+    chatMessages: [],
     openFiles: state.openFiles,
   }
   localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot))
@@ -123,9 +125,12 @@ export const useOsStore = create<OsState>((set, get) => ({
         currentAnalysisId: snapshot.currentAnalysisId ?? null,
         terminalLines: snapshot.terminalLines?.length ? snapshot.terminalLines : state.terminalLines,
         commandHistory: snapshot.commandHistory ?? [],
-        chatMessages: snapshot.chatMessages ?? [],
+        // Chat is intentionally session-only. Do not restore old conversations.
+        chatMessages: [],
         openFiles: snapshot.openFiles ?? {},
       }))
+      // Replace any older persisted chat transcript with an empty history.
+      persistSnapshot(get())
     } catch {
       // Ignore invalid local snapshot.
     }
@@ -298,6 +303,10 @@ export const useOsStore = create<OsState>((set, get) => ({
   resetCommandCursor: () => set({ commandCursor: -1 }),
   pushChatMessage: (message) => {
     set((state) => ({ chatMessages: [...state.chatMessages, message].slice(-100) }))
+    persistSnapshot(get())
+  },
+  clearChatMessages: () => {
+    set({ chatMessages: [] })
     persistSnapshot(get())
   },
   setExplorerTree: (tree) => set({ explorerTree: tree }),

@@ -5,9 +5,10 @@ type ChatAppProps = {
   messages: ChatMessage[]
   busy: boolean
   onAsk: (question: string) => Promise<void>
+  onClear: () => void
 }
 
-export function ChatApp({ messages, busy, onAsk }: ChatAppProps) {
+export function ChatApp({ messages, busy, onAsk, onClear }: ChatAppProps) {
   const [question, setQuestion] = useState('')
 
   const submit = async () => {
@@ -44,6 +45,9 @@ export function ChatApp({ messages, busy, onAsk }: ChatAppProps) {
         />
         <button className="os-btn" onClick={() => void submit()} disabled={busy}>
           Get Insight
+        </button>
+        <button className="os-btn os-btn-muted" onClick={onClear} disabled={busy || messages.length === 0}>
+          Clear chat
         </button>
       </div>
     </div>
